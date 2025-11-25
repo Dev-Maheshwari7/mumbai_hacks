@@ -1,27 +1,97 @@
+// import Login from './pages/Login.jsx'
+// import Aiagent from './pages/Aiagent.jsx'   
+// import Homepage from './pages/Homepage.jsx'
+// import React from 'react'
+// import Signup from './pages/Signup.jsx'
+// import { Route,Routes  } from 'react-router-dom'
+// import { useUser } from '@clerk/clerk-react'
+
+// const App = () => { 
+//   const {isLoaded,isSignedIn} = useUser()
+
+//   if (!isLoaded) {
+//     return <div>Loading...</div>;
+//   }
+
+//   return (
+//     <>  
+//       <Routes>
+//         <Route path="/" element={!isSignedIn ? <Login /> : <Homepage />} />
+//         <Route path="/signup" element={<Signup />} />
+//         {/* <Route path="/:userId" element={<Homepage />} /> */}
+//         <Route path="/aiagent" element={<Aiagent />} />
+//       </Routes>
+//     </>
+//   )     
+// }
+
+// export default App
 import Login from './pages/Login.jsx'
 import Aiagent from './pages/Aiagent.jsx'   
 import Homepage from './pages/Homepage.jsx'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Signup from './pages/Signup.jsx'
-import { Route,Routes  } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { Route, Routes, Navigate } from 'react-router-dom'
 
 const App = () => { 
-  const {isLoaded,isSignedIn} = useUser()
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [isSignedIn, setIsSignedIn] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    setIsSignedIn(!!token)
+    setIsLoaded(true)
+  }, [])
+
+  const handleLoginSuccess = () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      setIsSignedIn(true)
+    }
+  }
+
+  const handleSignupSuccess = () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      setIsSignedIn(true)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    setIsSignedIn(false)
+  }
 
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
-    <>  
-      <Routes>
-        <Route path="/" element={!isSignedIn ? <Login /> : <Homepage />} />
-        <Route path="/signup" element={<Signup />} />
-        {/* <Route path="/:userId" element={<Homepage />} /> */}
-        <Route path="/aiagent" element={<Aiagent />} />
-      </Routes>
-    </>
+    <Routes>
+      <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+      <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
+      <Route 
+        path="/" 
+        element={
+          isSignedIn ? (
+            <Homepage onLogout={handleLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        } 
+      />
+      <Route 
+        path="/aiagent" 
+        element={
+          isSignedIn ? (
+            <Aiagent />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        } 
+      />
+      <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
+    </Routes>
   )     
 }
 
