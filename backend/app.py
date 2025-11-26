@@ -164,8 +164,14 @@ def postsave():
             'timestamp': int(time() * 1000),
             'readableTime': data['readableTime'],
             'likes': [],       # new
-            'dislikes': []     # new
+            'dislikes': [],    # new
+            'comments': [],    # new
+            'media': data.get('media'),  # base64 encoded media
+            'mediaType': data.get('mediaType')  # 'image' or 'video'
         }
+        
+        # Debug log
+        print(f"Saving post with media: {bool(post['media'])}, type: {post['mediaType']}")
         
         result = post_collection.insert_one(post)
         user_id = str(result.inserted_id)
@@ -196,6 +202,7 @@ def get_posts():
 
         posts = []
         for doc in cursor:
+            has_media = bool(doc.get("media"))
             # ensure only needed fields are passed
             posts.append({
                 "post_id": doc.get("post_id"),
@@ -206,9 +213,15 @@ def get_posts():
                 'timestamp': int(time() * 1000),
                 "readableTime": doc.get("readableTime"),
                 "likes": doc.get("likes", []),
-                "dislikes": doc.get("dislikes", [])
+                "dislikes": doc.get("dislikes", []),
+                "comments": doc.get("comments", []),
+                "media": doc.get("media"),
+                "mediaType": doc.get("mediaType")
             })
+            if has_media:
+                print(f"Post {doc.get('post_id')} has media type: {doc.get('mediaType')}")
 
+        print(f"Returning {len(posts)} posts, {sum(1 for p in posts if p['media'])} with media")
         return jsonify({"posts": posts}), 200
 
     except Exception as e:
@@ -298,7 +311,10 @@ def get_user_posts():
                 "timestamp": doc.get("timestamp"),
                 "readableTime": doc.get("readableTime"),
                 "likes": doc.get("likes", []),
-                "dislikes": doc.get("dislikes", [])
+                "dislikes": doc.get("dislikes", []),
+                "comments": doc.get("comments", []),
+                "media": doc.get("media"),
+                "mediaType": doc.get("mediaType")
             })
         
         return jsonify({"posts": posts}), 200
@@ -376,6 +392,73 @@ import google.generativeai as genai
 # Configure Gemini API
     
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+@app.route('/api/auth/addComment', methods=['POST'])
+@jwt_required()
+def add_comment():
+    """Add a comment to a post"""
+    try:
+        data = request.get_json()
+        post_id = data.get('post_id')
+        comment_text = data.get('comment')
+        user_email = data.get('email')
+        username = data.get('username')
+        
+        if not post_id or not comment_text or not user_email or not username:
+            return jsonify({'message': 'Post ID, comment, email, and username are required'}), 400
+        
+        # Find the post
+        post = post_collection.find_one({'post_id': post_id})
+        
+        if not post:
+            return jsonify({'message': 'Post not found'}), 404
+        
+        # Create comment object
+        comment = {
+            'username': username,
+            'email': user_email,
+            'text': comment_text,
+            'timestamp': int(time() * 1000)
+        }
+        
+        # Add comment to post
+        post_collection.update_one(
+            {'post_id': post_id},
+            {'$push': {'comments': comment}}
+        )
+        
+        return jsonify({
+            'message': 'Comment added successfully',
+            'comment': comment
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
+@app.route('/api/auth/getComments', methods=['POST'])
+def get_comments():
+    """Get all comments for a post"""
+    try:
+        data = request.get_json()
+        post_id = data.get('post_id')
+        
+        if not post_id:
+            return jsonify({'message': 'Post ID is required'}), 400
+        
+        # Find the post
+        post = post_collection.find_one({'post_id': post_id}, {'comments': 1, '_id': 0})
+        
+        if not post:
+            return jsonify({'message': 'Post not found'}), 404
+        
+        comments = post.get('comments', [])
+        
+        return jsonify({'comments': comments}), 200
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
 
 @app.route('/trending-misinformation', methods=['POST'])
 def trending_misinformation():

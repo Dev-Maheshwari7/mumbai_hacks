@@ -37,11 +37,19 @@ const Post = ({
     content,
     timestamp,
     userEmail,
+    userUsername,
     postOwnerEmail,
     likes = [],
     dislikes = [],
+    media,
+    mediaType,
     onDeleteSuccess
 }) => {
+    // Debug media
+    if (media) {
+        console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
+    }
+    
     // Safe defaults
     const safeLikes = Array.isArray(likes) ? likes : [];
     const safeDislikes = Array.isArray(dislikes) ? dislikes : [];
@@ -142,14 +150,60 @@ const Post = ({
 
     useEffect(() => {
         handleReactionFetched();
+        fetchComments();
     }, []);
+
+    // Fetch comments from backend
+    const fetchComments = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/auth/getComments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ post_id }),
+            });
+
+            const data = await res.json();
+            if (data.comments) {
+                setComments(data.comments);
+            }
+        } catch (err) {
+            console.error("Error fetching comments:", err);
+        }
+    };
 
 
     // Comment handling
-    const handleComment = () => {
-        if (inputComment.trim() !== "") {
-            setComments([...comments, inputComment]);
-            setInputComment("");
+    const handleComment = async () => {
+        if (inputComment.trim() === "") return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch("http://localhost:5000/api/auth/addComment", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    post_id,
+                    comment: inputComment,
+                    email: userEmail,
+                    username: userUsername
+                }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Add the new comment to local state
+                setComments([...comments, data.comment]);
+                setInputComment("");
+            } else {
+                alert(data.message || 'Failed to add comment');
+            }
+        } catch (err) {
+            console.error("Error adding comment:", err);
+            alert('Error adding comment');
         }
     };
 
@@ -211,6 +265,34 @@ const Post = ({
             <h2 className="text-xl font-semibold mb-2">{title}</h2>
             <p className="text-gray-800 mb-4">{content}</p>
 
+            {/* Media Display */}
+            {media && mediaType === 'image' && (
+                <div className="mb-4">
+                    <img
+                        src={media}
+                        alt="Post media"
+                        className="w-full max-h-96 object-cover rounded-lg"
+                        onError={(e) => {
+                            console.error("Image failed to load for post:", post_id);
+                            e.target.style.display = 'none';
+                        }}
+                        onLoad={() => console.log("Image loaded successfully for post:", post_id)}
+                    />
+                </div>
+            )}
+            {media && mediaType === 'video' && (
+                <div className="mb-4">
+                    <video
+                        src={media}
+                        controls
+                        className="w-full max-h-96 rounded-lg"
+                        onError={(e) => {
+                            console.error("Video failed to load for post:", post_id);
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Vote Buttons */}
             <div className="flex items-center space-x-4 mb-4">
                 <button onClick={() => handleReaction("up")} className="flex items-center space-x-2">
@@ -266,10 +348,22 @@ const Post = ({
 
             {/* Comments */}
             <div className="max-h-40 overflow-y-auto">
-                <h4 className="font-semibold mb-2">Comments:</h4>
-                {comments.map((c, i) => (
-                    <div key={i} className="p-2 bg-gray-100 rounded mb-2">{c}</div>
-                ))}
+                <h4 className="font-semibold mb-2">Comments ({comments.length}):</h4>
+                {comments.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No comments yet. Be the first to comment!</p>
+                ) : (
+                    comments.map((c, i) => (
+                        <div key={i} className="p-3 bg-gray-100 rounded mb-2">
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="font-semibold text-sm text-blue-600">{c.username || c}</span>
+                                {c.timestamp && (
+                                    <span className="text-xs text-gray-500">{timeAgo(c.timestamp)}</span>
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-800">{c.text || c}</p>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
