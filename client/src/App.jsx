@@ -27,13 +27,16 @@
 
 // export default App
 import Login from './pages/Login.jsx'
-import Aiagent from './pages/Aiagent.jsx'   
+import Aiagent from './pages/Aiagent.jsx'
 import Homepage from './pages/Homepage.jsx'
 import React, { useState, useEffect } from 'react'
 import Signup from './pages/Signup.jsx'
 import { Route, Routes, Navigate } from 'react-router-dom'
+import { credentialsContext } from './context/context';
 
-const App = () => { 
+const App = () => {
+  const [userName, setuserName] = useState("")
+  const [email, setemail] = useState('')
   const [isLoaded, setIsLoaded] = useState(false)
   const [isSignedIn, setIsSignedIn] = useState(false)
 
@@ -66,33 +69,40 @@ const App = () => {
     return <div>Loading...</div>
   }
 
+  // used the react icons so installed it from npm
+  //installed the uuid from npm
+  
   return (
-    <Routes>
-      <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-      <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
-      <Route 
-        path="/" 
-        element={
-          isSignedIn ? (
-            <Homepage onLogout={handleLogout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } 
-      />
-      <Route 
-        path="/aiagent" 
-        element={
-          isSignedIn ? (
-            <Aiagent />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } 
-      />
-      <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
-    </Routes>
-  )     
+    <>
+      <credentialsContext.Provider value={{ email, setemail,userName, setuserName }}>
+        <Routes>
+          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
+          <Route
+            path="/"
+            element={
+              isSignedIn ? (
+                <Homepage onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/aiagent"
+            element={
+              isSignedIn ? (
+                <Aiagent />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
+        </Routes>
+        </credentialsContext.Provider>
+      </>
+      )     
 }
 
-export default App
+      export default App

@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from bson import ObjectId
 from datetime import timedelta
 import os
+from time import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,6 +34,7 @@ MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
 client = MongoClient(MONGO_URI)
 db = client['social_media_db']
 users_collection = db['users']
+post_collection = db['posts']
 
 # Routes
 
@@ -135,6 +137,120 @@ def get_current_user():
         
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+
+
+@app.route('/api/auth/savePost', methods=['POST'])
+def postsave():
+    """User Post Save Route"""
+    try:
+        data = request.get_json()
+        
+        # Validate input
+        if not data.get('email') or not data.get('name')  or not data.get('title') or not data.get('content'):
+            return jsonify({'message': 'name,email, title, and content are required'}), 400
+        
+        # # Check if user already exists
+        # if users_collection.find_one({'email': data['email']}):
+        #     return jsonify({'message': 'Email already registered'}), 409
+
+        
+        # save post data
+        post = {
+            'post_id': data['post_id'],
+            'username': data['name'],
+            'email': data['email'],
+            'title': data['title'],
+            'content': data['content'],
+            'timestamp': int(time() * 1000),
+            'readableTime': data['readableTime'],
+            'likes': [],       # new
+            'dislikes': []     # new
+        }
+        
+        result = post_collection.insert_one(post)
+        user_id = str(result.inserted_id)
+        
+        return jsonify({
+            'message': 'Post added successfully',
+            'user': {
+                'id': user_id,
+                'username': data['name'],
+                'email': data['email'],
+                'title': data['title'],
+                'content': data['content'],
+                'timestamp': int(time() * 1000),
+                'readableTime': data['readableTime']
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
+# Post Fetching
+@app.route('/api/auth/getPosts', methods=['GET'])
+def get_posts():
+    try:
+        # Get ALL posts from MongoDB
+        cursor = post_collection.find({}, {'_id': 0})  # remove _id from output
+
+        posts = []
+        for doc in cursor:
+            # ensure only needed fields are passed
+            posts.append({
+                "post_id": doc.get("post_id"),
+                "username": doc.get("username"),
+                "email": doc.get("email"),
+                "title": doc.get("title"),
+                "content": doc.get("content"),
+                'timestamp': int(time() * 1000),
+                "readableTime": doc.get("readableTime")
+            })
+
+        return jsonify({"posts": posts}), 200
+
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@app.route('/api/auth/reactPost', methods=['POST'])
+def react_post():
+    """
+    Body: { post_id, email, action } 
+    action = "like" or "dislike"
+    """
+    data = request.get_json()
+    post_id = data.get('post_id')
+    email = data.get('email')
+    action = data.get('action')
+
+    post = post_collection.find_one({"post_id": post_id})
+    if not post:
+        return jsonify({"message": "Post not found"}), 404
+
+    likes = set(post.get("likes", []))
+    dislikes = set(post.get("dislikes", []))
+
+    if action == "like":
+        likes.add(email)
+        dislikes.discard(email)
+    elif action == "dislike":
+        dislikes.add(email)
+        likes.discard(email)
+    else:
+        return jsonify({"message": "Invalid action"}), 400
+
+    post_collection.update_one(
+        {"post_id": post_id},
+        {"$set": {"likes": list(likes), "dislikes": list(dislikes)}}
+    )
+
+    # return full arrays for frontend
+    return jsonify({
+        "likes": list(likes),
+        "dislikes": list(dislikes)
+    }), 200
+
 
 
 @app.route('/api/auth/logout', methods=['POST'])

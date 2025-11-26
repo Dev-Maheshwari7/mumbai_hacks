@@ -49,7 +49,7 @@ export default function Login({ onLoginSuccess }) {
       }
 
       localStorage.setItem('token', data.token)
-      console.log('Token saved:', data.token)
+      // console.log('Token saved:', data.token)
       setFormData({ email: '', password: '' })
       onLoginSuccess()
       navigate('/')
