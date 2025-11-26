@@ -43,7 +43,7 @@ export default function CreatePost() {
       content,
       timestamp: postTimestamp,
       readableTime: timeAgo(postTimestamp),
-      post_id:uuidv4()+`-${value.email}`
+      post_id:uuidv4()+`-${value.userName}`
     };
     console.log("Post Created:", newPost);
     let response=await fetch('http://localhost:5000/api/auth/savePost', { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...newPost }) })

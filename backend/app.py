@@ -252,6 +252,24 @@ def react_post():
     }), 200
 
 
+#getting all reacted posts
+@app.route('/api/auth/postReacted', methods=['POST'])
+def reacted_post():
+    data = request.get_json()
+    name = data.get('name')
+
+    posts = list(
+        post_collection.find({
+            "post_id": {"$regex": f"{name}$"}
+        })
+    )
+
+    # Convert ObjectId to string
+    for post in posts:
+        post['_id'] = str(post['_id'])
+
+    return jsonify({"posts": posts}), 200
+
 
 @app.route('/api/auth/logout', methods=['POST'])
 @jwt_required()
