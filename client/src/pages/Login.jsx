@@ -83,7 +83,7 @@ export default function Login({ onLoginSuccess }) {
       </button>
       <p>
         Don't have an account?{' '}
-        <button onClick={() => onLoginSuccess('toSignup')}>
+        <button onClick={() => navigate('/signup')}>
           Sign Up
         </button>
       </p>

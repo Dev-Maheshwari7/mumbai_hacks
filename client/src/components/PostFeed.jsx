@@ -23,6 +23,10 @@ const PostsFeed = () => {
     fetchPosts();
   }, []);
 
+  const handleDeleteSuccess = (deletedPostId) => {
+    setPosts(posts.filter(p => p.post_id !== deletedPostId));
+  };
+
   return (
     <div className="flex flex-col items-center mt-6">
       {posts.map((p, i) => (
@@ -34,8 +38,10 @@ const PostsFeed = () => {
           content={p.content}
           timestamp={Number(p.timestamp?.$numberLong) || p.timestamp || Date.now()}
           userEmail={email}      // current logged-in user
+          postOwnerEmail={p.email} // post owner's email
           likes={p.likes || []}  // default empty array
           dislikes={p.dislikes || []} // default empty array
+          onDeleteSuccess={handleDeleteSuccess}
         />
       ))}
     </div>

@@ -204,7 +204,9 @@ def get_posts():
                 "title": doc.get("title"),
                 "content": doc.get("content"),
                 'timestamp': int(time() * 1000),
-                "readableTime": doc.get("readableTime")
+                "readableTime": doc.get("readableTime"),
+                "likes": doc.get("likes", []),
+                "dislikes": doc.get("dislikes", [])
             })
 
         return jsonify({"posts": posts}), 200
@@ -269,6 +271,74 @@ def reacted_post():
         post['_id'] = str(post['_id'])
 
     return jsonify({"posts": posts}), 200
+
+
+@app.route('/api/auth/getUserPosts', methods=['POST'])
+@jwt_required()
+def get_user_posts():
+    """Get all posts by a specific user"""
+    try:
+        data = request.get_json()
+        user_email = data.get('email')
+        
+        if not user_email:
+            return jsonify({'message': 'Email is required'}), 400
+        
+        # Find all posts by this user
+        cursor = post_collection.find({'email': user_email}, {'_id': 0})
+        
+        posts = []
+        for doc in cursor:
+            posts.append({
+                "post_id": doc.get("post_id"),
+                "username": doc.get("username"),
+                "email": doc.get("email"),
+                "title": doc.get("title"),
+                "content": doc.get("content"),
+                "timestamp": doc.get("timestamp"),
+                "readableTime": doc.get("readableTime"),
+                "likes": doc.get("likes", []),
+                "dislikes": doc.get("dislikes", [])
+            })
+        
+        return jsonify({"posts": posts}), 200
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
+@app.route('/api/auth/deletePost', methods=['DELETE'])
+@jwt_required()
+def delete_post():
+    """Delete a post (only by the post owner)"""
+    try:
+        data = request.get_json()
+        post_id = data.get('post_id')
+        user_email = data.get('email')
+        
+        if not post_id or not user_email:
+            return jsonify({'message': 'Post ID and email are required'}), 400
+        
+        # Find the post
+        post = post_collection.find_one({'post_id': post_id})
+        
+        if not post:
+            return jsonify({'message': 'Post not found'}), 404
+        
+        # Check if the user owns the post
+        if post.get('email') != user_email:
+            return jsonify({'message': 'Unauthorized: You can only delete your own posts'}), 403
+        
+        # Delete the post
+        result = post_collection.delete_one({'post_id': post_id})
+        
+        if result.deleted_count > 0:
+            return jsonify({'message': 'Post deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Failed to delete post'}), 500
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
 
 @app.route('/api/auth/logout', methods=['POST'])

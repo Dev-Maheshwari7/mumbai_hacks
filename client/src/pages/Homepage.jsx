@@ -4,11 +4,13 @@ import Post from '../components/Post'
 import CreatePost from '../components/CreatePost'
 import { useContext } from 'react';
 import { credentialsContext } from '../context/context'
+import { useNavigate } from 'react-router-dom'
 
 export default function Homepage({ onLogout }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const value = useContext(credentialsContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -78,8 +80,8 @@ export default function Homepage({ onLogout }) {
           <h2 className="font-semibold text-lg mb-4">Navigation</h2>
 
           <ul className="space-y-3">
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">🏠 Home</li>
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">👤 Profile</li>
+            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer" onClick={() => navigate('/')}>🏠 Home</li>
+            <li className="hover:bg-blue-100 p-2 rounded cursor-pointer font-semibold" onClick={() => navigate('/profile')}>👤 My Profile</li>
             <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">📝 Create Post</li>
             <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">🔍 Explore</li>
             <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">⚙ Settings</li>

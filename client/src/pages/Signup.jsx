@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Signup({ onSignupSuccess }) {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({ 
     username: '', 
     email: '', 
@@ -38,8 +39,9 @@ export default function Signup({ onSignupSuccess }) {
         return
       }
 
-      localStorage.setItem('token', data.token)
-      onSignupSuccess()
+      // Don't auto-login, redirect to login page
+      alert('Account created successfully! Please login.')
+      navigate('/login')
     } catch (err) {
       setError('Error connecting to server: ' + err.message)
     } finally {
@@ -77,7 +79,7 @@ export default function Signup({ onSignupSuccess }) {
       </button>
       <p>
         Already have an account?{' '}
-        <button onClick={() => onSignupSuccess('toLogin')}>
+        <button onClick={() => navigate('/login')}>
           Login
         </button>
       </p>

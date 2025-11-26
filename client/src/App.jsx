@@ -29,6 +29,7 @@
 import Login from './pages/Login.jsx'
 import Aiagent from './pages/Aiagent.jsx'
 import Homepage from './pages/Homepage.jsx'
+import Profile from './pages/Profile.jsx'
 import React, { useState, useEffect } from 'react'
 import Signup from './pages/Signup.jsx'
 import { Route, Routes, Navigate } from 'react-router-dom'
@@ -83,6 +84,16 @@ const App = () => {
             element={
               isSignedIn ? (
                 <Homepage onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              isSignedIn ? (
+                <Profile onLogout={handleLogout} />
               ) : (
                 <Navigate to="/login" replace />
               )

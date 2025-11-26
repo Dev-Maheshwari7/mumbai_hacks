@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BsHandThumbsUp, BsFillHandThumbsUpFill } from "react-icons/bs";
 import { BsHandThumbsDown, BsFillHandThumbsDownFill } from "react-icons/bs";
-import { MdSaveAlt } from "react-icons/md";
+import { MdSaveAlt, MdDelete } from "react-icons/md";
 import { IoSaveOutline } from "react-icons/io5";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 
@@ -37,8 +37,10 @@ const Post = ({
     content,
     timestamp,
     userEmail,
+    postOwnerEmail,
     likes = [],
-    dislikes = []
+    dislikes = [],
+    onDeleteSuccess
 }) => {
     // Safe defaults
     const safeLikes = Array.isArray(likes) ? likes : [];
@@ -151,12 +153,59 @@ const Post = ({
         }
     };
 
+    // Delete post
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this post?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch("http://localhost:5000/api/auth/deletePost", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ post_id, email: userEmail }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Post deleted successfully!');
+                if (onDeleteSuccess) {
+                    onDeleteSuccess(post_id);
+                }
+            } else {
+                alert(data.message || 'Failed to delete post');
+            }
+        } catch (err) {
+            console.error("Error deleting post:", err);
+            alert('Error deleting post');
+        }
+    };
+
+    // Check if current user is the post owner
+    const isOwner = postOwnerEmail === userEmail;
+
     return (
         <div className="bg-white shadow-md rounded-lg p-5 w-full max-w-lg mb-5">
             {/* Header */}
             <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-semibold">{username}</h3>
-                <p className="text-gray-500 text-sm">{displayTime}</p>
+                <div className="flex items-center space-x-3">
+                    <p className="text-gray-500 text-sm">{displayTime}</p>
+                    {isOwner && (
+                        <button
+                            onClick={handleDelete}
+                            className="text-red-500 hover:text-red-700 transition"
+                            title="Delete post"
+                        >
+                            <MdDelete size={20} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             <h2 className="text-xl font-semibold mb-2">{title}</h2>
