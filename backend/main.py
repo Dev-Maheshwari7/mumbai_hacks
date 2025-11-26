@@ -1,9 +1,22 @@
-from transformers import pipeline
-import torch
+# 
 
-# print(torch.cuda.is_available())
-# print(torch.cuda.get_device_name(0))
+import os
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
-pipe = pipeline("text-classification", model="openai-community/roberta-base-openai-detector")
-response = pipe("aliens are real.")
+# Force offline mode
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+model_name = "openai-community/roberta-base-openai-detector"
+
+# Load tokenizer & model locally only
+tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, local_files_only=True)
+
+pipe = pipeline(
+    "text-classification",
+    model=model,
+    tokenizer=tokenizer
+)
+
+response = pipe("i like big nutts and i cannot lie")
 print(response)

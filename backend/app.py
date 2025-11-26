@@ -358,6 +358,18 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'message': 'Internal server error'}), 500
 
+from tested import check_truthfulness
+
+@app.route('/fact-check', methods=['POST'])
+def fact_check():
+    data = request.json
+    url = data.get('url')
+    results = check_truthfulness(url)
+    
+    return jsonify({
+        'results': results
+    })
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
