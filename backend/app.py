@@ -370,6 +370,66 @@ def fact_check():
         'results': results
     })
 
+from flask import Flask, request, jsonify
+import google.generativeai as genai
+
+# Configure Gemini API
+    
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+@app.route('/trending-misinformation', methods=['POST'])
+def trending_misinformation():
+    data = request.json
+    topic = data.get('topic')
+    area = data.get('area')
+    
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""Give top 4 misinformation regarding {topic} in {area}. 
+        
+        Structure your response exactly like this for each misinformation:
+        Misinformation: [the misinformation claim]
+        Source: [where it typically comes from]
+        
+        Return ONLY these 4 items, no extra text."""
+        
+        response = model.generate_content(prompt)
+        response_text = response.text
+        
+        # Parse the response
+        misinformation_list = []
+        items = response_text.split('\n\n')
+        
+        for item in items:
+            if 'Misinformation:' in item and 'Source:' in item:
+                lines = item.split('\n')
+                misinformation = ""
+                source = ""
+                
+                for line in lines:
+                    if 'Misinformation:' in line:
+                        misinformation = line.replace('Misinformation:', '').strip()
+                    elif 'Source:' in line:
+                        source = line.replace('Source:', '').strip()
+                
+                if misinformation and source:
+                    misinformation_list.append({
+                        'misinformation': misinformation,
+                        'source': source
+                    })
+        
+        return jsonify({
+            'misinformation': misinformation_list,
+            'topic': topic,
+            'area': area
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'misinformation': []
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
