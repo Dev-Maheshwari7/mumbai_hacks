@@ -431,5 +431,53 @@ def trending_misinformation():
             'misinformation': []
         }), 500
 
+# from flask import Flask, request, jsonify
+# import google.generativeai as genai
+
+# genai.configure(api_key="YOUR_GEMINI_API_KEY")
+
+@app.route('/conversational-fact-check', methods=['POST'])
+def conversational_fact_check():
+    data = request.json
+    user_message = data.get('message')
+    conversation_history = data.get('conversation_history', [])
+    
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        # Build conversation context
+        system_prompt = """You are an expert AI fact-checking agent. Your job is to:
+1. Listen to claims from users
+2. Ask clarifying questions to understand the claim better
+3. Provide evidence-based analysis
+4. Search for contradictory or supporting information
+5. Give a final verdict on whether the claim is TRUE, FALSE, or UNVERIFIABLE
+6. Be conversational and friendly, like a detective investigating claims
+
+Keep responses concise (2-3 sentences) and ask follow-up questions to dig deeper.
+After you have enough information, provide a clear verdict with reasoning."""
+        
+        # Prepare messages for Gemini
+        messages = [{"role": msg["role"], "content": msg["content"]} for msg in conversation_history]
+        messages.append({"role": "user", "content": user_message})
+        
+        # Generate response
+        response = model.generate_content(system_prompt + "\n\nConversation:\n" + 
+                                         "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages]))
+        
+        ai_response = response.text
+        
+        return jsonify({
+            'response': ai_response,
+            'status': 'success'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'response': f"Sorry, I encountered an error: {str(e)}",
+            'status': 'error'
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
