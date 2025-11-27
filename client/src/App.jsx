@@ -26,6 +26,7 @@
 // }
 
 // export default App
+import Conversation from "./pages/Conversation.jsx";
 import Trending from "./pages/Trending.jsx";
 import Login from './pages/Login.jsx'
 import Aiagent from './pages/Aiagent.jsx'
@@ -121,6 +122,16 @@ const App = () => {
             element={
               isSignedIn ? (
                 <Trending />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/conversation"
+            element={
+              isSignedIn ? (
+                <Conversation />
               ) : (
                 <Navigate to="/login" replace />
               )
