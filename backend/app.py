@@ -13,6 +13,7 @@ from datetime import timedelta
 import os
 from time import time
 from dotenv import load_dotenv
+from googletrans import Translator
 
 load_dotenv()
 
@@ -35,6 +36,9 @@ client = MongoClient(MONGO_URI)
 db = client['social_media_db']
 users_collection = db['users']
 post_collection = db['posts']
+
+# Initialize Translator
+translator = Translator()
 
 # Routes
 
@@ -619,6 +623,32 @@ def get_comments():
         
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+
+
+@app.route('/api/auth/translate', methods=['POST'])
+def translate_text():
+    """Translate text to target language"""
+    try:
+        data = request.get_json()
+        text = data.get('text')
+        target_lang = data.get('target_lang', 'en')
+        
+        if not text:
+            return jsonify({'message': 'Text is required'}), 400
+        
+        # Perform translation
+        translation = translator.translate(text, dest=target_lang)
+        
+        return jsonify({
+            'original': text,
+            'translated': translation.text,
+            'source_lang': translation.src,
+            'target_lang': target_lang
+        }), 200
+        
+    except Exception as e:
+        print(f"Translation error: {str(e)}")
+        return jsonify({'message': f'Translation failed: {str(e)}'}), 500
 
 
 @app.route('/trending-misinformation', methods=['POST'])

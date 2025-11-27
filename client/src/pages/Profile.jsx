@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { credentialsContext } from '../context/context';
+import { credentialsContext, LanguageContext } from '../context/context';
 import Post from '../components/Post';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import { t } from '../translations/translations';
 
 export default function Profile({ onLogout }) {
   const [user, setUser] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { username, email } = useContext(credentialsContext);
+  const { language, setLanguage } = useContext(LanguageContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,18 +83,36 @@ export default function Profile({ onLogout }) {
             className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition"
           >
             <FaArrowLeft />
-            <span>Back to Home</span>
+            <span>{t('Back to Home', language)}</span>
           </button>
-          <h1 className="text-xl font-bold text-blue-600">My Profile</h1>
+          <h1 className="text-xl font-bold text-blue-600">{t('My Profile', language)}</h1>
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Language Selector */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="px-3 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer"
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="hi">हिन्दी</option>
+            <option value="zh-cn">中文</option>
+            <option value="ja">日本語</option>
+            <option value="ar">العربية</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+          </select>
+          
           <p className="font-medium">{user?.username}</p>
           <button
             className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
             onClick={handleLogout}
           >
-            Logout
+            {t('Logout', language)}
           </button>
         </div>
       </nav>
@@ -115,7 +135,7 @@ export default function Profile({ onLogout }) {
               <div className="flex space-x-6 mt-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-blue-600">{userPosts.length}</p>
-                  <p className="text-gray-600 text-sm">Posts</p>
+                  <p className="text-gray-600 text-sm">{t('Posts', language)}</p>
                 </div>
 
                 <div
@@ -145,12 +165,12 @@ export default function Profile({ onLogout }) {
 
         {/* User's Posts Section */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-2xl font-semibold mb-4 text-gray-800">My Posts</h3>
+          <h3 className="text-2xl font-semibold mb-4 text-gray-800">{t('My Profile', language)} {t('Posts', language)}</h3>
 
           {userPosts.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">You haven't created any posts yet.</p>
-              <p className="text-gray-400 mt-2">Start sharing your thoughts with the community!</p>
+              <p className="text-gray-500 text-lg">{t("You haven't created any posts yet.", language)}</p>
+              <p className="text-gray-400 mt-2">{t('Start sharing your thoughts with the community!', language)}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -169,6 +189,7 @@ export default function Profile({ onLogout }) {
                   dislikes={post.dislikes || []}
                   media={post.media}
                   mediaType={post.mediaType}
+                  targetLanguage={language}
                   onDeleteSuccess={(deletedPostId) => {
                     setUserPosts(userPosts.filter(p => p.post_id !== deletedPostId));
                   }}

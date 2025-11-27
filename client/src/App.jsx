@@ -35,7 +35,7 @@ import Profile from './pages/Profile.jsx'
 import React, { useState, useEffect } from 'react'
 import Signup from './pages/Signup.jsx'
 import { Route, Routes, Navigate } from 'react-router-dom'
-import { credentialsContext } from './context/context';
+import { credentialsContext, LanguageContext } from './context/context';
 import FollowersPage from "./pages/FollowersPage.jsx";
 import FollowingPage from "./pages/FollowingPage.jsx";
 import ProtectedProfile from "./pages/ProtectedProfile.jsx";
@@ -45,6 +45,7 @@ const App = () => {
   const [email, setemail] = useState('')
   const [isLoaded, setIsLoaded] = useState(false)
   const [isSignedIn, setIsSignedIn] = useState(false)
+  const [language, setLanguage] = useState('en')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -80,8 +81,9 @@ const App = () => {
 
   return (
     <>
-      <credentialsContext.Provider value={{ email, setemail, userName, setuserName }}>
-        <Routes>
+      <LanguageContext.Provider value={{ language, setLanguage }}>
+        <credentialsContext.Provider value={{ email, setemail, userName, setuserName }}>
+          <Routes>
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/followers/:email" element={<FollowersPage />} />
           <Route path="/following/:email" element={<FollowingPage />} />
@@ -138,10 +140,11 @@ const App = () => {
             }
           />
           <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
-        </Routes>
-      </credentialsContext.Provider>
+          </Routes>
+        </credentialsContext.Provider>
+      </LanguageContext.Provider>
     </>
-  )
+  )     
 }
 
 export default App

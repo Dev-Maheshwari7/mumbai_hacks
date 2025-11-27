@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import Post from "./Post";
 import { credentialsContext } from "../context/context";
 
-const PostsFeed = () => {
+const PostsFeed = ({ targetLanguage = 'en' }) => {
   const [posts, setPosts] = useState([]);
   const { userName, email } = useContext(credentialsContext); // get current user
   const [followingStatus, setFollowingStatus] = useState({});
@@ -132,6 +132,7 @@ return (
         dislikes={p.dislikes || []} // default empty array
         media={p.media}
         mediaType={p.mediaType}
+        targetLanguage={targetLanguage}
         onDeleteSuccess={handleDeleteSuccess}
         isFollowingInitial={followingStatus[p.email]}   // NEW
         onFollowToggle={() => handleFollowToggle(p.email)}  // NEW

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { BsHandThumbsUp, BsFillHandThumbsUpFill } from "react-icons/bs";
 import { BsHandThumbsDown, BsFillHandThumbsDownFill } from "react-icons/bs";
 import { MdSaveAlt, MdDelete } from "react-icons/md";
 import { IoSaveOutline } from "react-icons/io5";
 import { FaRegShareFromSquare } from "react-icons/fa6";
+import { t } from '../translations/translations';
+import { LanguageContext } from '../context/context';
 
 // Format numbers like 1K, 2M
 function formatNumber(num) {
@@ -14,7 +16,7 @@ function formatNumber(num) {
 }
 
 // Social media style "time ago"
-function timeAgo(timestamp) {
+function timeAgo(timestamp, language = 'en') {
     const seconds = Math.floor((Date.now() - Number(timestamp)) / 1000);
     const intervals = {
         year: 31536000,
@@ -25,9 +27,12 @@ function timeAgo(timestamp) {
     };
     for (const [unit, value] of Object.entries(intervals)) {
         const count = Math.floor(seconds / value);
-        if (count >= 1) return `${count} ${unit}${count > 1 ? "s" : ""} ago`;
+        if (count >= 1) {
+            const unitTranslated = count > 1 ? t(unit + 's', language) : t(unit, language);
+            return `${count} ${unitTranslated} ${t('ago', language)}`;
+        }
     }
-    return "just now";
+    return t("just now", language);
 }
 
 const Post = ({
@@ -43,10 +48,13 @@ const Post = ({
     dislikes = [],
     media,
     mediaType,
+    targetLanguage = 'en',
     onDeleteSuccess,
     isFollowingInitial, // boolean
     onFollowToggle      // function
 }) => {
+    const { language } = useContext(LanguageContext);
+    
     // Debug media
     // if (media) {
     //     console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
@@ -56,16 +64,70 @@ const Post = ({
     const safeLikes = Array.isArray(likes) ? likes : [];
     const safeDislikes = Array.isArray(dislikes) ? dislikes : [];
 
+    // Translation state
+    const [translatedTitle, setTranslatedTitle] = useState(title);
+    const [translatedContent, setTranslatedContent] = useState(content);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [showOriginal, setShowOriginal] = useState(true);
+
     const [upvotes, setUpvotes] = useState(safeLikes.length);
     const [downvotes, setDownvotes] = useState(safeDislikes.length);
     const [clicked, setClicked] = useState(
         safeLikes.includes(userEmail) ? "up" :
             safeDislikes.includes(userEmail) ? "down" : null
     );
-    const [displayTime, setDisplayTime] = useState(timeAgo(timestamp));
+    const [displayTime, setDisplayTime] = useState(timeAgo(timestamp, language));
     const [saved, setSaved] = useState(false);
     const [comments, setComments] = useState([]);
     const [inputComment, setInputComment] = useState("");
+
+    // Translate content when language changes
+    useEffect(() => {
+        if (targetLanguage !== 'en') {
+            translatePost();
+        } else {
+            setTranslatedTitle(title);
+            setTranslatedContent(content);
+            setShowOriginal(true);
+        }
+    }, [targetLanguage]);
+
+    // Translation function
+    const translatePost = async () => {
+        if (targetLanguage === 'en') {
+            setShowOriginal(true);
+            return;
+        }
+
+        setIsTranslating(true);
+        try {
+            // Translate title
+            const titleRes = await fetch('http://localhost:5000/api/auth/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: title, target_lang: targetLanguage })
+            });
+            const titleData = await titleRes.json();
+
+            // Translate content
+            const contentRes = await fetch('http://localhost:5000/api/auth/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: content, target_lang: targetLanguage })
+            });
+            const contentData = await contentRes.json();
+
+            if (titleRes.ok && contentRes.ok) {
+                setTranslatedTitle(titleData.translated);
+                setTranslatedContent(contentData.translated);
+                setShowOriginal(false);
+            }
+        } catch (err) {
+            console.error('Translation error:', err);
+        } finally {
+            setIsTranslating(false);
+        }
+    };
 
     // Update "x minutes ago" every minute
     useEffect(() => {
@@ -246,58 +308,87 @@ const Post = ({
     const isOwner = postOwnerEmail === userEmail;
 
     return (
-        <div className="bg-white shadow-md rounded-lg p-5 w-full max-w-lg mb-5">
+        <div className="bg-white rounded-xl p-6 w-full max-w-2xl mb-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
             {/* Header */}
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold">{username}</h3>
-                {/* // Inside Post component, somewhere near the header, e.g. below username */}
-                {userEmail !== postOwnerEmail && onFollowToggle && (
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-10 h-10 bg-linear-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm">
+                        {username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-sm font-semibold text-gray-900">{username}</h3>
+                            <p className="text-gray-600 text-xs">{displayTime}</p>
+                            {userEmail !== postOwnerEmail && onFollowToggle && (
+                                <button
+                                    onClick={onFollowToggle}
+                                    className={`px-4 py-1.5 text-xs rounded-lg font-semibold transition-all ${
+                                        isFollowingInitial 
+                                            ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                                            : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                                    }`}
+                                >
+                                    {isFollowingInitial ? "Following" : "Follow"}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                {isOwner && (
                     <button
-                        onClick={onFollowToggle}
-                        className={`ml-3 px-3 py-1 rounded border ${isFollowingInitial ? "bg-gray-200 text-gray-800" : "bg-blue-600 text-white"
-                            }`}
+                        onClick={handleDelete}
+                        className="text-sm text-red-600 hover:text-red-700 transition-colors shrink-0 font-medium"
                     >
-                        {isFollowingInitial ? "Unfollow" : "Follow"}
+                        Delete
                     </button>
                 )}
-                <div className="flex items-center space-x-3">
-                    <p className="text-gray-500 text-sm">{displayTime}</p>
-                    {isOwner && (
+            </div>
+
+            {/* Title Section */}
+            <div className="mb-3">
+                <div className="flex justify-between items-start gap-3">
+                    <h2 className="text-lg font-semibold text-gray-900 flex-1">
+                        {showOriginal ? title : translatedTitle}
+                    </h2>
+                    {!showOriginal && targetLanguage !== 'en' && (
                         <button
-                            onClick={handleDelete}
-                            className="text-red-500 hover:text-red-700 transition"
-                            title="Delete post"
+                            onClick={() => setShowOriginal(!showOriginal)}
+                            className="text-sm text-indigo-600 hover:text-indigo-700 transition-colors shrink-0 font-medium"
                         >
-                            <MdDelete size={20} />
+                            {t('Show Original', language)}
                         </button>
                     )}
                 </div>
+                {isTranslating && (
+                    <p className="text-sm text-indigo-600 italic mt-1 font-medium">{t('Translating...', language)}</p>
+                )}
             </div>
-
-            <h2 className="text-xl font-semibold mb-2">{title}</h2>
-            <p className="text-gray-800 mb-4">{content}</p>
+            
+            {/* Content */}
+            <p className="text-gray-700 text-sm mb-4 leading-relaxed whitespace-pre-line">
+                {showOriginal ? content : translatedContent}
+            </p>
 
             {/* Media Display */}
             {media && mediaType === 'image' && (
-                <div className="mb-4">
+                <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                     <img
                         src={media}
                         alt="Post media"
-                        className="w-full max-h-96 object-cover rounded-lg"
+                        className="w-full max-h-[500px] object-cover"
                         onError={(e) => {
                             console.error("Image failed to load for post:", post_id);
                             e.target.style.display = 'none';
                         }}
-                    // onLoad={() => console.log("Image loaded successfully for post:", post_id)}
                     />
                 </div>
             )}
             {media && mediaType === 'video' && (
-                <div className="mb-4">
+                <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                     <video
                         src={media}
                         controls
-                        className="w-full max-h-96 rounded-lg"
+                        className="w-full max-h-[500px]"
                         onError={(e) => {
                             console.error("Video failed to load for post:", post_id);
                         }}
@@ -305,76 +396,71 @@ const Post = ({
                 </div>
             )}
 
-            {/* Vote Buttons */}
-            <div className="flex items-center space-x-4 mb-4">
-                <button onClick={() => handleReaction("up")} className="flex items-center space-x-2">
-                    {clicked === "up" ? (
-                        <BsFillHandThumbsUpFill className="text-green-600" />
-                    ) : (
-                        <BsHandThumbsUp className="text-green-400 hover:text-green-700" />
-                    )}
-                    <span>{formatNumber(upvotes)}</span>
-                </button>
-
-                <button onClick={() => handleReaction("down")} className="flex items-center space-x-2">
-                    {clicked === "down" ? (
-                        <BsFillHandThumbsDownFill className="text-red-600" />
-                    ) : (
-                        <BsHandThumbsDown className="text-red-400 hover:text-red-700" />
-                    )}
-                    <span>{formatNumber(downvotes)}</span>
-                </button>
-
-                {/* Save */}
-                <button onClick={() => setSaved(!saved)} className="ml-auto text-xl">
-                    {saved ? <IoSaveOutline /> : <MdSaveAlt />}
-                </button>
-
-                {/* Share */}
-                <button
-                    onClick={() => {
-                        if (navigator.share) navigator.share({ title, text: content });
-                        else alert("Sharing is not supported on this device.");
-                    }}
-                    className="text-xl"
+            {/* Action Buttons */}
+            <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mb-4">
+                <button 
+                    onClick={() => handleReaction("up")} 
+                    className={`text-sm transition-all font-semibold ${
+                        clicked === "up" 
+                            ? "text-green-600" 
+                            : "text-gray-500 hover:text-green-600"
+                    }`}
                 >
-                    <FaRegShareFromSquare />
+                    ↑ {formatNumber(upvotes)}
                 </button>
+
+                <button 
+                    onClick={() => handleReaction("down")} 
+                    className={`text-sm transition-all font-semibold ${
+                        clicked === "down" 
+                            ? "text-red-600" 
+                            : "text-gray-500 hover:text-red-600"
+                    }`}
+                >
+                    ↓ {formatNumber(downvotes)}
+                </button>
+
+                <span className="text-xs text-gray-300">•</span>
+                <span className="text-sm text-gray-600 font-medium">{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
             </div>
 
             {/* Comment Input */}
-            <div className="mb-3">
-                <input
-                    value={inputComment}
-                    onChange={(e) => setInputComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full p-2 border rounded"
-                />
-                <button
-                    onClick={handleComment}
-                    className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
-                >
-                    Comment
-                </button>
+            <div className="mb-4">
+                <div className="flex gap-2">
+                    <input
+                        value={inputComment}
+                        onChange={(e) => setInputComment(e.target.value)}
+                        placeholder={t('Add a comment...', language)}
+                        className="flex-1 px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                        onKeyPress={(e) => e.key === 'Enter' && handleComment()}
+                    />
+                    <button
+                        onClick={handleComment}
+                        className="text-sm bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-all font-semibold shadow-sm hover:shadow-md"
+                    >
+                        {t('Comment', language)}
+                    </button>
+                </div>
             </div>
 
             {/* Comments */}
-            <div className="max-h-40 overflow-y-auto">
-                <h4 className="font-semibold mb-2">Comments ({comments.length}):</h4>
+            <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 {comments.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No comments yet. Be the first to comment!</p>
+                    <p className="text-gray-600 text-sm text-center py-6 italic">{t('No comments yet. Be the first to comment!', language)}</p>
                 ) : (
-                    comments.map((c, i) => (
-                        <div key={i} className="p-3 bg-gray-100 rounded mb-2">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="font-semibold text-sm text-blue-600">{c.username || c}</span>
-                                {c.timestamp && (
-                                    <span className="text-xs text-gray-500">{timeAgo(c.timestamp)}</span>
-                                )}
+                    <div className="space-y-3">
+                        {comments.map((c, i) => (
+                            <div key={i} className="py-3 px-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="font-semibold text-sm text-gray-900">{c.username || c}</span>
+                                    {c.timestamp && (
+                                        <span className="text-xs text-gray-600">{timeAgo(c.timestamp, language)}</span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-gray-700 leading-relaxed">{c.text || c}</p>
                             </div>
-                            <p className="text-sm text-gray-800">{c.text || c}</p>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

@@ -3,12 +3,14 @@ import PostsFeed from '../components/PostFeed'
 import Post from '../components/Post'
 import CreatePost from '../components/CreatePost'
 import { useContext } from 'react';
-import { credentialsContext } from '../context/context'
+import { credentialsContext, LanguageContext } from '../context/context'
 import { useNavigate } from 'react-router-dom'
+import { t } from '../translations/translations'
 
 export default function Homepage({ onLogout }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { language, setLanguage } = useContext(LanguageContext);
   const value = useContext(credentialsContext);
   const navigate = useNavigate();
 
@@ -55,19 +57,37 @@ export default function Homepage({ onLogout }) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 flex flex-col">
+    <div className="w-full min-h-screen bg-white flex flex-col">
 
       {/* Top Navbar */}
-      <nav className="w-full bg-white shadow-md px-6 py-3 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-xl font-bold text-blue-600">Social Media</h1>
+      <nav className="w-full bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+        <h1 className="text-lg font-bold text-gray-900">{t('Social Media', language)}</h1>
 
-        <div className="flex items-center space-x-4">
-          <p className="font-medium">{user?.username}</p>
+        <div className="flex items-center gap-4">
+          {/* Language Selector */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="hi">हिन्दी</option>
+            <option value="zh-cn">中文</option>
+            <option value="ja">日本語</option>
+            <option value="ar">العربية</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+          </select>
+          
+          <p className="text-sm text-gray-700 font-medium">{user?.username}</p>
           <button
-            className="bg-red-500 text-white px-3 py-1 rounded"
+            className="text-sm text-red-600 hover:text-red-700 transition-colors font-medium"
             onClick={handleLogout}
           >
-            Logout
+            {t('Logout', language)}
           </button>
         </div>
       </nav>
@@ -76,27 +96,27 @@ export default function Homepage({ onLogout }) {
       <div className="flex justify-center w-full px-4 mt-4">
 
         {/* LEFT SIDEBAR - FIXED */}
-        <aside className="w-1/5 h-[88vh] bg-white shadow rounded-lg p-4 sticky top-20">
-          <h2 className="font-semibold text-lg mb-4">Navigation</h2>
+        <aside className="w-1/5 h-[88vh] bg-gray-50 border-r border-gray-100 p-4 sticky top-20">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{t('Navigation', language)}</h2>
 
-          <ul className="space-y-3">
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer" onClick={() => navigate('/')}>🏠 Home</li>
-            <li className="hover:bg-blue-100 p-2 rounded cursor-pointer font-semibold" onClick={() => navigate('/profile')}>👤 My Profile</li>
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">📝 Create Post</li>
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">🔍 Explore</li>
-            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">⚙ Settings</li>
+          <ul className="space-y-1">
+            <li className="text-sm text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 p-2.5 rounded-lg cursor-pointer transition-all font-medium" onClick={() => navigate('/')}>{t('Home', language)}</li>
+            <li className="text-sm text-indigo-600 bg-indigo-50 p-2.5 rounded-lg cursor-pointer font-semibold transition-all" onClick={() => navigate('/profile')}>{t('My Profile', language)}</li>
+            <li className="text-sm text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 p-2.5 rounded-lg cursor-pointer transition-all font-medium">{t('Create Post', language)}</li>
+            <li className="text-sm text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 p-2.5 rounded-lg cursor-pointer transition-all font-medium">{t('Explore', language)}</li>
+            <li className="text-sm text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 p-2.5 rounded-lg cursor-pointer transition-all font-medium">{t('Settings', language)}</li>
           </ul>
         </aside>
 
         {/* MIDDLE CONTENT (SCROLLABLE FEED) */}
-        <main className="w-2/4 mx-4 h-[88vh] overflow-y-scroll p-2">
-          <h2 className="text-xl font-semibold mb-4">Feed</h2>
-          <PostsFeed /> 
+        <main className="w-2/4 mx-4 h-[88vh] overflow-y-scroll">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{t('Feed', language)}</h2>
+          <PostsFeed targetLanguage={language} /> 
         </main>
 
         {/* RIGHT SIDEBAR - FIXED */}
-        <aside className="w-1/5 h-[88vh] bg-white shadow rounded-lg p-4 sticky top-20">
-          <h2 className="font-semibold text-lg mb-3">Actions</h2>
+        <aside className="w-1/5 h-[88vh] bg-gray-50 border-l border-gray-100 p-4 sticky top-20">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{t('Actions', language)}</h2>
             <CreatePost />
         </aside>
 
