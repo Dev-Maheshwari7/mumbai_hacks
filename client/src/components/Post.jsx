@@ -80,6 +80,7 @@ const Post = ({
     const [saved, setSaved] = useState(false);
     const [comments, setComments] = useState([]);
     const [inputComment, setInputComment] = useState("");
+    const [imageEnlarged, setImageEnlarged] = useState(false);
 
     // Translate content when language changes
     useEffect(() => {
@@ -371,17 +372,40 @@ const Post = ({
 
             {/* Media Display */}
             {media && mediaType === 'image' && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                    <img
-                        src={media}
-                        alt="Post media"
-                        className="w-full max-h-[500px] object-cover"
-                        onError={(e) => {
-                            console.error("Image failed to load for post:", post_id);
-                            e.target.style.display = 'none';
-                        }}
-                    />
-                </div>
+                <>
+                    <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm cursor-pointer" onClick={() => setImageEnlarged(true)}>
+                        <img
+                            src={media}
+                            alt="Post media"
+                            className="w-full max-h-[500px] object-cover hover:opacity-95 transition-opacity"
+                            onError={(e) => {
+                                console.error("Image failed to load for post:", post_id);
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                    </div>
+                    
+                    {/* Enlarged Image Modal */}
+                    {imageEnlarged && (
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+                            onClick={() => setImageEnlarged(false)}
+                        >
+                            <button
+                                className="absolute top-4 right-4 text-white text-3xl font-bold hover:text-gray-300 transition-colors"
+                                onClick={() => setImageEnlarged(false)}
+                            >
+                                ×
+                            </button>
+                            <img
+                                src={media}
+                                alt="Enlarged post media"
+                                className="max-w-full max-h-full object-contain"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    )}
+                </>
             )}
             {media && mediaType === 'video' && (
                 <div className="mb-4 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
@@ -400,24 +424,26 @@ const Post = ({
             <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mb-4">
                 <button 
                     onClick={() => handleReaction("up")} 
-                    className={`text-sm transition-all font-semibold ${
+                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${
                         clicked === "up" 
                             ? "text-green-600" 
-                            : "text-gray-500 hover:text-green-600"
+                            : "text-green-500 hover:text-green-600"
                     }`}
                 >
-                    ↑ {formatNumber(upvotes)}
+                    {clicked === "up" ? <BsFillHandThumbsUpFill /> : <BsHandThumbsUp />}
+                    <span className="text-sm">{formatNumber(upvotes)}</span>
                 </button>
 
                 <button 
                     onClick={() => handleReaction("down")} 
-                    className={`text-sm transition-all font-semibold ${
+                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${
                         clicked === "down" 
                             ? "text-red-600" 
-                            : "text-gray-500 hover:text-red-600"
+                            : "text-red-500 hover:text-red-600"
                     }`}
                 >
-                    ↓ {formatNumber(downvotes)}
+                    {clicked === "down" ? <BsFillHandThumbsDownFill /> : <BsHandThumbsDown />}
+                    <span className="text-sm">{formatNumber(downvotes)}</span>
                 </button>
 
                 <span className="text-xs text-gray-300">•</span>
