@@ -162,7 +162,6 @@ def postsave():
             'title': data['title'],
             'content': data['content'],
             'timestamp': int(time() * 1000),
-            'readableTime': data['readableTime'],
             'likes': [],       # new
             'dislikes': [],    # new
             'comments': [],    # new
@@ -183,13 +182,12 @@ def postsave():
                 'username': data['name'],
                 'email': data['email'],
                 'title': data['title'],
-                'content': data['content'],
-                'timestamp': int(time() * 1000),
-                'readableTime': data['readableTime']
+                'content': data['content']
             }
         }), 201
         
     except Exception as e:
+        # print("Error occured")
         return jsonify({'message': str(e)}), 500
 
 
@@ -210,8 +208,7 @@ def get_posts():
                 "email": doc.get("email"),
                 "title": doc.get("title"),
                 "content": doc.get("content"),
-                'timestamp': int(time() * 1000),
-                "readableTime": doc.get("readableTime"),
+                'timestamp': doc.get("timestamp"),
                 "likes": doc.get("likes", []),
                 "dislikes": doc.get("dislikes", []),
                 "comments": doc.get("comments", []),
@@ -309,7 +306,6 @@ def get_user_posts():
                 "title": doc.get("title"),
                 "content": doc.get("content"),
                 "timestamp": doc.get("timestamp"),
-                "readableTime": doc.get("readableTime"),
                 "likes": doc.get("likes", []),
                 "dislikes": doc.get("dislikes", []),
                 "comments": doc.get("comments", []),

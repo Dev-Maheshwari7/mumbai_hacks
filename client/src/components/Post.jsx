@@ -46,9 +46,9 @@ const Post = ({
     onDeleteSuccess
 }) => {
     // Debug media
-    if (media) {
-        console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
-    }
+    // if (media) {
+    //     console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
+    // }
     
     // Safe defaults
     const safeLikes = Array.isArray(likes) ? likes : [];
@@ -276,7 +276,7 @@ const Post = ({
                             console.error("Image failed to load for post:", post_id);
                             e.target.style.display = 'none';
                         }}
-                        onLoad={() => console.log("Image loaded successfully for post:", post_id)}
+                        // onLoad={() => console.log("Image loaded successfully for post:", post_id)}
                     />
                 </div>
             )}
