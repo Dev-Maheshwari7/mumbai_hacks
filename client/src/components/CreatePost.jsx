@@ -49,24 +49,6 @@ export default function CreatePost() {
     setMediaType(null);
   };
 
-  const timeAgo = (timestamp) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    const intervals = {
-      year: 31536000,
-      month: 2592000,
-      day: 86400,
-      hour: 3600,
-      minute: 60,
-    };
-
-    for (const [unit, value] of Object.entries(intervals)) {
-      const count = Math.floor(seconds / value);
-      if (count >= 1) return `${count} ${unit}${count > 1 ? "s" : ""} ago`;
-    }
-
-    return "just now";
-  };
-
   const handlePost = async () => {
     if (!title || !content) {
       alert("Please fill the title and content.");
@@ -81,7 +63,6 @@ export default function CreatePost() {
       title,
       content,
       timestamp: postTimestamp,
-      readableTime: timeAgo(postTimestamp),
       post_id:uuidv4()+`-${value.userName}`,
       media: mediaPreview, // base64 encoded media
       mediaType: mediaType // 'image' or 'video'

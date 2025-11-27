@@ -12,11 +12,11 @@ const PostsFeed = () => {
       const data = await res.json();
 
       if (data.posts) {
-        console.log("Fetched posts:", data.posts.map(p => ({ 
-          id: p.post_id, 
-          hasMedia: !!p.media, 
-          mediaType: p.mediaType 
-        })));
+        // console.log("Fetched posts:", data.posts.map(p => ({ 
+        //   id: p.post_id, 
+        //   hasMedia: !!p.media, 
+        //   mediaType: p.mediaType 
+        // })));
         setPosts(data.posts.reverse()); // newest first
       }
     } catch (err) {
@@ -32,6 +32,31 @@ const PostsFeed = () => {
     setPosts(posts.filter(p => p.post_id !== deletedPostId));
   };
 
+
+  function normalizeTimestamp(post) {
+  let t = post.timestamp;
+    // console.log(t);
+  // Case 1: MongoDB extended format: { $numberLong: "1764175158189" }
+  if (t && typeof t === "object" && t.$numberLong) {
+    return Number(t.$numberLong);
+  }
+
+  // Case 2: Backend already converted timestamp to number
+  if (typeof t === "number") {
+    return t;
+  }
+
+  // Case 3: String number (e.g. "1764175158189")
+  if (typeof t === "string" && !isNaN(Number(t))) {
+    return Number(t);
+  }
+
+  // Case 4: Completely missing → return a safe value
+  console.warn("Post has invalid timestamp:", post.post_id,post);
+  return 0;
+}
+
+
   return (
     <div className="flex flex-col items-center mt-6">
       {posts.map((p, i) => (
@@ -41,7 +66,7 @@ const PostsFeed = () => {
           username={p.username}
           title={p.title}
           content={p.content}
-          timestamp={Number(p.timestamp?.$numberLong) || p.timestamp || Date.now()}
+          timestamp={normalizeTimestamp(p)}
           userEmail={email}      // current logged-in user
           userUsername={userName} // current logged-in username
           postOwnerEmail={p.email} // post owner's email
