@@ -111,12 +111,33 @@ export default function Profile({ onLogout }) {
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-gray-800">{user?.username}</h2>
               <p className="text-gray-600 mt-1">{user?.email}</p>
-              
+
               <div className="flex space-x-6 mt-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-blue-600">{userPosts.length}</p>
                   <p className="text-gray-600 text-sm">Posts</p>
                 </div>
+
+                <div
+                  className="text-center cursor-pointer"
+                  onClick={() => navigate(`/followers/${user.email}`)}
+                >
+                  <p className="text-2xl font-bold text-blue-600">
+                    {user?.followers?.length || 0}
+                  </p>
+                  <p className="text-gray-600 text-sm">Followers</p>
+                </div>
+
+                <div
+                  className="text-center cursor-pointer"
+                  onClick={() => navigate(`/following/${user.email}`)}
+                >
+                  <p className="text-2xl font-bold text-blue-600">
+                    {user?.following?.length || 0}
+                  </p>
+                  <p className="text-gray-600 text-sm">Following</p>
+                </div>
+
               </div>
             </div>
           </div>
@@ -125,7 +146,7 @@ export default function Profile({ onLogout }) {
         {/* User's Posts Section */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-2xl font-semibold mb-4 text-gray-800">My Posts</h3>
-          
+
           {userPosts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">You haven't created any posts yet.</p>

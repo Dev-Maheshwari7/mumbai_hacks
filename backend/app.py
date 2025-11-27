@@ -27,7 +27,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
 # Enable CORS
-CORS(app)
+CORS(app,upports_credentials=True)
 
 # MongoDB Connection
 MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
@@ -61,6 +61,8 @@ def signup():
             'username': data['username'],
             'email': data['email'],
             'password': hashed_password,
+            'followers': [],
+            'following': []
         }
         
         result = users_collection.insert_one(user)
@@ -126,12 +128,34 @@ def get_current_user():
         
         if not user:
             return jsonify({'message': 'User not found'}), 404
-        
+
+        # Ensure followers & following fields always exist
+        update_needed = False
+        updates = {}
+
+        if 'followers' not in user:
+            updates['followers'] = []
+            update_needed = True
+
+        if 'following' not in user:
+            updates['following'] = []
+            update_needed = True
+
+        if update_needed:
+            users_collection.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$set': updates}
+            )
+            # merge into response
+            user.update(updates)
+
         return jsonify({
             'user': {
                 'id': str(user['_id']),
                 'username': user['username'],
-                'email': user['email']
+                'email': user['email'],
+                'followers': user.get('followers', []),
+                'following': user.get('following', [])
             }
         }), 200
         
@@ -244,11 +268,22 @@ def react_post():
     dislikes = set(post.get("dislikes", []))
 
     if action == "like":
-        likes.add(email)
-        dislikes.discard(email)
+        if email in likes:
+            # 👉 user already liked → remove like
+            likes.discard(email)
+        else:
+            # 👉 add like and remove dislike if exists
+            likes.add(email)
+            dislikes.discard(email)
+
     elif action == "dislike":
-        dislikes.add(email)
-        likes.discard(email)
+        if email in dislikes:
+            # 👉 user already disliked → remove dislike
+            dislikes.discard(email)
+        else:
+            # 👉 add dislike and remove like if exists
+            dislikes.add(email)
+            likes.discard(email)
     else:
         return jsonify({"message": "Invalid action"}), 400
 
@@ -319,38 +354,168 @@ def get_user_posts():
         return jsonify({'message': str(e)}), 500
 
 
+#New Follower and Following routes
+
+#Follower List route
+@app.route('/api/auth/getFollowers', methods=['POST'])
+@jwt_required()
+def get_followers():
+    data = request.get_json()
+    email = data.get("email")
+
+    user = users_collection.find_one({'email': email}, {"followers": 1})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    followers = user.get("followers", [])
+    return jsonify({"followers": followers}), 200
+
+
+#Following list route
+@app.route('/api/auth/getFollowing', methods=['POST'])
+@jwt_required()
+def get_following():
+    data = request.get_json()
+    email = data.get("email")
+
+    user = users_collection.find_one({'email': email}, {"following": 1})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    following = user.get("following", [])
+    return jsonify({"following": following}), 200
+
+#User Account route for showing Followings and Followers
+@app.route('/api/auth/getUser', methods=['POST'])
+def get_public_user():
+    data = request.get_json()
+    email = data.get("email")
+
+    user = users_collection.find_one(
+        {"email": email},
+        {
+            "_id": 0,
+            "username": 1,
+            "email": 1,              # show email? optional
+            "followers": 1,
+            "following": 1
+        }
+    )
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    posts = list(post_collection.find(
+        {"email": email},
+        {"_id": 0}
+    ))
+
+    return jsonify({
+        "user": user,
+        "posts": posts
+    }), 200
+
+# Follow / Unfollow toggle
+@app.route('/api/auth/followToggle', methods=['POST'])
+@jwt_required()
+def follow_toggle():
+    data = request.get_json()
+    follower_email = data.get("followerEmail")
+    target_email = data.get("targetEmail")
+    action = data.get("action")  # "follow" or "unfollow"
+
+    if not follower_email or not target_email or not action:
+        return jsonify({"message": "Missing required fields"}), 400
+
+    follower = users_collection.find_one({'email': follower_email})
+    target = users_collection.find_one({'email': target_email})
+
+    if not follower or not target:
+        return jsonify({"message": "User not found"}), 404
+
+    following = follower.get("following", [])
+    followers = target.get("followers", [])
+
+    if action == "follow":
+        if target_email not in following:
+            following.append(target_email)
+            users_collection.update_one(
+                {'email': follower_email},
+                {'$set': {'following': following}}
+            )
+        if follower_email not in followers:
+            followers.append(follower_email)
+            users_collection.update_one(
+                {'email': target_email},
+                {'$set': {'followers': followers}}
+            )
+    elif action == "unfollow":
+        if target_email in following:
+            following.remove(target_email)
+            users_collection.update_one(
+                {'email': follower_email},
+                {'$set': {'following': following}}
+            )
+        if follower_email in followers:
+            followers.remove(follower_email)
+            users_collection.update_one(
+                {'email': target_email},
+                {'$set': {'followers': followers}}
+            )
+    else:
+        return jsonify({"message": "Invalid action"}), 400
+
+    return jsonify({
+        "message": f"Successfully {action}ed {target_email}",
+        "following": following
+    }), 200
+
+
+@app.route('/api/auth/getFollowingStatus', methods=['POST'])
+@jwt_required()
+def get_following_status():
+    data = request.get_json()
+    follower_email = data.get("followerEmail")
+
+    user = users_collection.find_one({'email': follower_email}, {"following": 1})
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    following_list = user.get("following", [])
+
+    return jsonify({"following": following_list}), 200
+
+
 @app.route('/api/auth/deletePost', methods=['DELETE'])
 @jwt_required()
 def delete_post():
-    """Delete a post (only by the post owner)"""
     try:
         data = request.get_json()
         post_id = data.get('post_id')
-        user_email = data.get('email')
-        
-        if not post_id or not user_email:
-            return jsonify({'message': 'Post ID and email are required'}), 400
-        
-        # Find the post
+
+        if not post_id:
+            return jsonify({'message': 'Post ID is required'}), 400
+
+        # find jwt user
+        current_user_id = get_jwt_identity()
+        current_user = users_collection.find_one({"_id": ObjectId(current_user_id)})
+        current_user_email = current_user["email"]
+
         post = post_collection.find_one({'post_id': post_id})
-        
+
         if not post:
             return jsonify({'message': 'Post not found'}), 404
         
-        # Check if the user owns the post
-        if post.get('email') != user_email:
-            return jsonify({'message': 'Unauthorized: You can only delete your own posts'}), 403
-        
-        # Delete the post
-        result = post_collection.delete_one({'post_id': post_id})
-        
-        if result.deleted_count > 0:
-            return jsonify({'message': 'Post deleted successfully'}), 200
-        else:
-            return jsonify({'message': 'Failed to delete post'}), 500
-        
+        if post['email'] != current_user_email:
+            return jsonify({'message': 'Unauthorized: You can delete only your posts'}), 403
+
+        post_collection.delete_one({'post_id': post_id})
+        return jsonify({'message': 'Post deleted successfully'}), 200
+    
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+
 
 
 @app.route('/api/auth/logout', methods=['POST'])

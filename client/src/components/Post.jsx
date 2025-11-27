@@ -43,13 +43,15 @@ const Post = ({
     dislikes = [],
     media,
     mediaType,
-    onDeleteSuccess
+    onDeleteSuccess,
+    isFollowingInitial, // boolean
+    onFollowToggle      // function
 }) => {
     // Debug media
     // if (media) {
     //     console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
     // }
-    
+
     // Safe defaults
     const safeLikes = Array.isArray(likes) ? likes : [];
     const safeDislikes = Array.isArray(dislikes) ? dislikes : [];
@@ -98,7 +100,7 @@ const Post = ({
             const updatedLikes = Array.isArray(data.likes) ? data.likes : [];
             const updatedDislikes = Array.isArray(data.dislikes) ? data.dislikes : [];
 
-            console.log(updatedLikes, updatedDislikes);
+            // console.log(updatedLikes, updatedDislikes);
 
             setUpvotes(updatedLikes.length);
             setDownvotes(updatedDislikes.length);
@@ -248,6 +250,16 @@ const Post = ({
             {/* Header */}
             <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-semibold">{username}</h3>
+                {/* // Inside Post component, somewhere near the header, e.g. below username */}
+                {userEmail !== postOwnerEmail && onFollowToggle && (
+                    <button
+                        onClick={onFollowToggle}
+                        className={`ml-3 px-3 py-1 rounded border ${isFollowingInitial ? "bg-gray-200 text-gray-800" : "bg-blue-600 text-white"
+                            }`}
+                    >
+                        {isFollowingInitial ? "Unfollow" : "Follow"}
+                    </button>
+                )}
                 <div className="flex items-center space-x-3">
                     <p className="text-gray-500 text-sm">{displayTime}</p>
                     {isOwner && (
@@ -276,7 +288,7 @@ const Post = ({
                             console.error("Image failed to load for post:", post_id);
                             e.target.style.display = 'none';
                         }}
-                        // onLoad={() => console.log("Image loaded successfully for post:", post_id)}
+                    // onLoad={() => console.log("Image loaded successfully for post:", post_id)}
                     />
                 </div>
             )}

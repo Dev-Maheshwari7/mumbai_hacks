@@ -35,6 +35,9 @@ import React, { useState, useEffect } from 'react'
 import Signup from './pages/Signup.jsx'
 import { Route, Routes, Navigate } from 'react-router-dom'
 import { credentialsContext } from './context/context';
+import FollowersPage from "./pages/FollowersPage.jsx";
+import FollowingPage from "./pages/FollowingPage.jsx";
+import ProtectedProfile from "./pages/ProtectedProfile.jsx";
 
 const App = () => {
   const [userName, setuserName] = useState("")
@@ -73,12 +76,15 @@ const App = () => {
 
   // used the react icons so installed it from npm
   //installed the uuid from npm
-  
+
   return (
     <>
-      <credentialsContext.Provider value={{ email, setemail,userName, setuserName }}>
+      <credentialsContext.Provider value={{ email, setemail, userName, setuserName }}>
         <Routes>
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/followers/:email" element={<FollowersPage />} />
+          <Route path="/following/:email" element={<FollowingPage />} />
+          <Route path="/user/:email" element={<ProtectedProfile />} />
           <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
           <Route
             path="/"
@@ -122,9 +128,9 @@ const App = () => {
           />
           <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
         </Routes>
-        </credentialsContext.Provider>
-      </>
-      )     
+      </credentialsContext.Provider>
+    </>
+  )
 }
 
-      export default App
+export default App
