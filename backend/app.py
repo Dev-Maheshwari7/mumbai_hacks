@@ -514,11 +514,6 @@ def trending_misinformation():
             'misinformation': []
         }), 500
 
-# from flask import Flask, request, jsonify
-# import google.generativeai as genai
-
-# genai.configure(api_key="YOUR_GEMINI_API_KEY")
-
 @app.route('/conversational-fact-check', methods=['POST'])
 def conversational_fact_check():
     data = request.json
@@ -526,7 +521,7 @@ def conversational_fact_check():
     conversation_history = data.get('conversation_history', [])
     
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         
         # Build conversation context
         system_prompt = """You are an expert AI fact-checking agent. Your job is to:
@@ -560,7 +555,6 @@ After you have enough information, provide a clear verdict with reasoning."""
             'response': f"Sorry, I encountered an error: {str(e)}",
             'status': 'error'
         }), 500
-
-
+    
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
