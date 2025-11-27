@@ -4,7 +4,7 @@ import { credentialsContext } from "../context/context";
 
 const PostsFeed = () => {
   const [posts, setPosts] = useState([]);
-  const { username, email } = useContext(credentialsContext); // get current user
+  const { userName, email } = useContext(credentialsContext); // get current user
 
   const fetchPosts = async () => {
     try {
@@ -12,6 +12,11 @@ const PostsFeed = () => {
       const data = await res.json();
 
       if (data.posts) {
+        console.log("Fetched posts:", data.posts.map(p => ({ 
+          id: p.post_id, 
+          hasMedia: !!p.media, 
+          mediaType: p.mediaType 
+        })));
         setPosts(data.posts.reverse()); // newest first
       }
     } catch (err) {
@@ -38,9 +43,12 @@ const PostsFeed = () => {
           content={p.content}
           timestamp={Number(p.timestamp?.$numberLong) || p.timestamp || Date.now()}
           userEmail={email}      // current logged-in user
+          userUsername={userName} // current logged-in username
           postOwnerEmail={p.email} // post owner's email
           likes={p.likes || []}  // default empty array
           dislikes={p.dislikes || []} // default empty array
+          media={p.media}
+          mediaType={p.mediaType}
           onDeleteSuccess={handleDeleteSuccess}
         />
       ))}

@@ -142,9 +142,12 @@ export default function Profile({ onLogout }) {
                   content={post.content}
                   timestamp={Number(post.timestamp?.$numberLong) || post.timestamp || Date.now()}
                   userEmail={email}
+                  userUsername={username}
                   postOwnerEmail={post.email}
                   likes={post.likes || []}
                   dislikes={post.dislikes || []}
+                  media={post.media}
+                  mediaType={post.mediaType}
                   onDeleteSuccess={(deletedPostId) => {
                     setUserPosts(userPosts.filter(p => p.post_id !== deletedPostId));
                   }}
