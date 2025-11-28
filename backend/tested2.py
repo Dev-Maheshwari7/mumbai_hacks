@@ -5,6 +5,7 @@ import torch
 from ddgs import DDGS
 from dotenv import load_dotenv
 import google.generativeai as genai
+import re
 
 load_dotenv()
 SERPER_API_KEY = os.getenv("SERPER_API_KEY")
@@ -126,18 +127,18 @@ def split_into_sentences(text, max_length=512):
     
     return chunks
 
-def search_duckduckgo(query):
-    """Search DuckDuckGo for real-time information"""
-    try:
-        ddgs = DDGS()
-        results = ddgs.text(query, max_results=3)
-        search_summary = "\n".join([f"- {r['title']}: {r['body'][:150]}" for r in results])
-        return search_summary
-    except Exception as e:
-        print(f"Error searching DuckDuckGo: {e}")
-        return None
+# def search_duckduckgo(query):
+#     """Search DuckDuckGo for real-time information"""
+#     try:
+#         ddgs = DDGS()
+#         results = ddgs.text(query, max_results=3)
+#         search_summary = "\n".join([f"- {r['title']}: {r['body'][:150]}" for r in results])
+#         return search_summary
+#     except Exception as e:
+#         print(f"Error searching DuckDuckGo: {e}")
+#         return None
 
-def search_real_time(query: str) -> str:
+def search_real_time(query: str) -> list:
     """Search the web for real-time information using Serper API"""
     try:
         url = "https://google.serper.dev/search"
@@ -153,19 +154,44 @@ def search_real_time(query: str) -> str:
         response = requests.post(url, json=payload, headers=headers)
         results = response.json()
         
-        # Extract organic search results
+        # Extract organic search results and return as list
         if "organic" in results:
-            search_data = "\n".join([
-                f"- {r['title']}: {r['snippet']}"
-                for r in results["organic"][:3]
-            ])
+            search_data = []
+            for i, r in enumerate(results["organic"][:3], 1):
+                search_data.append({
+                    'id': i,
+                    'title': r['title'],
+                    'snippet': r['snippet'],
+                    'link': r.get('link', '')
+                })
             return search_data
         else:
-            return "No organic results found"
+            return []
             
     except Exception as e:
         print(f"Search error: {e}")
-        return f"Search unavailable: {str(e)}"
+        return []
+
+def extract_verdict_and_confidence(analysis_text):
+    """Extract verdict and confidence from AI analysis"""
+    verdict = "UNKNOWN"
+    confidence = 0
+    
+    # Extract verdict
+    if "VERDICT:" in analysis_text:
+        verdict_match = re.search(r'VERDICT:\s*(TRUE|FALSE)', analysis_text, re.IGNORECASE)
+        if verdict_match:
+            verdict = verdict_match.group(1).upper()
+    
+    # Extract confidence if mentioned, otherwise estimate from analysis
+    confidence_match = re.search(r'CONFIDENCE:\s*(\d+)%', analysis_text, re.IGNORECASE)
+    if confidence_match:
+        confidence = int(confidence_match.group(1))
+    else:
+        # Default confidence based on verdict
+        confidence = 85 if verdict in ["TRUE", "FALSE"] else 0
+    
+    return verdict, confidence
 
 def check_truthfulness(url):
     """Scrape URL and check content truthfulness"""
@@ -207,11 +233,16 @@ def check_truthfulness(url):
             print(f"Segment {i}: {chunk[:80]}...")
             
             # Search for information
-            print(f"  Searching DuckDuckGo for: '{chunk}'")
-            search_results = search_duckduckgo(chunk)
-            results2 = search_real_time(chunk)
+            print(f"  Searching for: '{chunk}'")
+            search_results = search_real_time(chunk)
             
-            print(results2)
+            # Format search results for prompt
+            search_text = "\n".join([
+                f"{r['id']}. {r['title']}: {r['snippet']}"
+                for r in search_results
+            ]) if search_results else "No search results found"
+            
+            print(search_text[:100])
             
             # Create prompt with search results
             prompt = f"""You are a professional fact-checker. Analyze this claim and determine if it is TRUE or FALSE based on the search results.
@@ -219,34 +250,41 @@ def check_truthfulness(url):
 CLAIM: {chunk}
 
 SEARCH RESULTS:
-{search_results if search_results else 'No search results found'}
-
-More results:
-{results2}
+{search_text}
 
 Provide your verdict in this format:
 VERDICT: [TRUE/FALSE]
-EXPLANATION: [3-5 sentences explaining why]
-SOURCES: [list all sources]"""
+EXPLANATION: [2-3 sentences explaining why]
+CONFIDENCE: [percentage 0-100]"""
             
             # Use Gemini 2.5 Flash
             response = model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=1000,
+                    max_output_tokens=500,
                     temperature=0.1,
                 )
             )
             
             answer = response.text
+            verdict, confidence = extract_verdict_and_confidence(answer)
+            
+            # Summarize the claim
+            claim_summary = chunk[:100] + "..." if len(chunk) > 100 else chunk
+            
+            # Extract source IDs from search results
+            source_ids = ",".join([str(r['id']) for r in search_results]) if search_results else "None"
             
             results.append({
-                'text': chunk[:100] + "..." if len(chunk) > 100 else chunk,
+                'claim': claim_summary,
+                'verdict': verdict,
+                'confidence': confidence,
+                'sources': source_ids,
                 'search_results': search_results,
                 'analysis': answer
             })
             
-            print(f"  Analysis: {answer[:200]}...\n")
+            print(f"  Verdict: {verdict} | Confidence: {confidence}%\n")
         
         except Exception as e:
             print(f"Error analyzing segment: {e}\n")
@@ -257,16 +295,8 @@ SOURCES: [list all sources]"""
         print("FACT-CHECK ANALYSIS COMPLETE")
         print("=" * 50)
         for i, result in enumerate(results, 1):
-            print(f"\n{i}. Statement: {result['text']}")
-            print(f"\n   Search Results:\n   {result['search_results'][:200] if result['search_results'] else 'No results'}")
-            print(f"\n   Analysis:\n   {result['analysis']}")
+            print(f"\n{i}. Claim: {result['claim']}")
+            print(f"   Verdict: {result['verdict']} | Confidence: {result['confidence']}%")
+            print(f"   Sources: {result['sources']}")
     
     return results
-
-# if __name__ == "__main__":
-#     url = input("Enter URL (Twitter, X, or any website): ").strip()
-    
-#     if url:
-#         check_truthfulness(url)
-#     else:
-#         print("No URL provided")

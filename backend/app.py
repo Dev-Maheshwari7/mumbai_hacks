@@ -19,7 +19,9 @@ load_dotenv()
 
 # Initialize Flask App
 app = Flask(__name__)
+from flask_cors import CORS
 
+# CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
 # Configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
@@ -539,7 +541,7 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'message': 'Internal server error'}), 500
 
-from tested import check_truthfulness
+from tested2 import GEMINI_API_KEY, check_truthfulness
 
 @app.route('/fact-check', methods=['POST'])
 def fact_check():
@@ -707,45 +709,327 @@ def trending_misinformation():
 
 @app.route('/conversational-fact-check', methods=['POST'])
 def conversational_fact_check():
+    import requests
+    import json
+    import re
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+
     data = request.json
     user_message = data.get('message')
     conversation_history = data.get('conversation_history', [])
-    
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        
-        # Build conversation context
-        system_prompt = """You are an expert AI fact-checking agent. Your job is to:
-1. Listen to claims from users
-2. Ask clarifying questions to understand the claim better
-3. Provide evidence-based analysis
-4. Search for contradictory or supporting information
-5. Give a final verdict on whether the claim is TRUE, FALSE, or UNVERIFIABLE
-6. Be conversational and friendly, like a detective investigating claims
 
-Keep responses concise (2-3 sentences) and ask follow-up questions to dig deeper.
-After you have enough information, provide a clear verdict with reasoning."""
+    # ------ 0️⃣ Detect if this is a follow-up/source request ------
+    follow_up_keywords = [
+        'source', 'evidence', 'fetch', 'show', 'provide', 'get', 'retrieve',
+        'what was', 'tell me more', 'expand', 'elaborate', 'clarify', 'explain',
+        'previous', 'earlier', 'before', 'last', 'prior', 'more details',
+        'can you', 'could you', 'would you', 'please share'
+    ]
+    user_message_lower = user_message.lower()
+    is_follow_up = any(keyword in user_message_lower for keyword in follow_up_keywords)
+    
+    # Extract the original claim from conversation if this is a follow-up
+    original_claim = None
+    original_evidence = None
+    if is_follow_up and len(conversation_history) > 0:
+        # Look for the last user message (the original claim)
+        for msg in reversed(conversation_history):
+            if msg['role'] == 'user':
+                original_claim = msg['content']
+                break
+
+    try:
+        # ------ 1️⃣ Perform Real-time Search using Serper ------
+        # Skip search for follow-up questions; use the original claim instead
+        search_query = original_claim if is_follow_up and original_claim else user_message
         
-        # Prepare messages for Gemini
-        messages = [{"role": msg["role"], "content": msg["content"]} for msg in conversation_history]
-        messages.append({"role": "user", "content": user_message})
-        
-        # Generate response
-        response = model.generate_content(system_prompt + "\n\nConversation:\n" + 
-                                         "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages]))
-        
-        ai_response = response.text
-        
+        search_url = "https://google.serper.dev/search"
+        payload = {"q": search_query}
+        headers = {
+            "X-API-KEY": SERPER_API_KEY,
+            "Content-Type": "application/json"
+        }
+
+        search_results = requests.post(search_url, json=payload, headers=headers).json()
+
+        # Extract relevant text summary
+        result_snippets = []
+
+        if "organic" in search_results:
+            for item in search_results["organic"][:5]:
+                snippet = item.get("snippet", "")
+                title = item.get("title", "")
+                result_snippets.append(f"{title}: {snippet}")
+
+        live_summary = "\n".join(result_snippets) if result_snippets else "No reliable real-time data found."
+
+        # ------ 2️⃣ System Prompt ------
+        system_prompt = """
+You are a conversational AI fact-checker assistant. You help users verify claims using real-time search evidence.
+
+IMPORTANT BEHAVIORS:
+- Be conversational and friendly, not robotic
+- Remember context from previous messages in the conversation
+- If user asks to "fetch sources", "show sources", "get sources", or similar, provide the search evidence in a readable format
+- If user is clarifying a previous claim, reference that context naturally
+- Only fact-check NEW claims or requests for information about previous claims
+- If the user's message is NOT asking you to fact-check something (e.g., asking for sources, asking a follow-up question), respond naturally without forcing a verdict
+
+FACT-CHECKING PROTOCOL:
+When fact-checking a claim:
+1. Analyze the user's claim
+2. Compare with provided search evidence
+3. Determine verdict: TRUE (evidence strongly supports), FALSE (evidence contradicts), or UNVERIFIABLE (insufficient/conflicting)
+4. Provide confidence score (0-100)
+
+RESPONSE FORMAT:
+Return ONLY valid JSON with these fields:
+
+{
+ "agent_response": "<natural conversational response - can be friendly, informative, or clarifying>",
+ "verdict": "TRUE | FALSE | UNVERIFIABLE | NONE",
+ "confidence_score": <0-100>,
+ "evidence_summary": "<relevant evidence or explanation>"
+}
+
+Use "NONE" as verdict for non-fact-checking conversational responses (like providing sources).
+Be concise, natural, and helpful. Return ONLY the JSON, no markdown code blocks.
+"""
+
+        # ------ 3️⃣ Build Conversation for Gemini ------
+        # Format conversation history with full context
+        past_msgs = ""
+        if conversation_history:
+            for msg in conversation_history:
+                role = msg['role'].upper()
+                content = msg['content']
+                # Clean up any artifact formatting from previous responses
+                if role == 'ASSISTANT':
+                    # Remove the verdict/confidence emoji and formatting
+                    content = content.replace('✅ ', '').replace('❌ ', '').replace('⚠️ ', '').replace('❓ ', '')
+                    # Extract just the conversational parts
+                    lines = content.split('\n')
+                    content = '\n'.join([line for line in lines if not line.startswith('Confidence:') and not line.startswith('📋')])
+                past_msgs += f"{role}: {content}\n"
+
+        final_prompt = f"""
+{system_prompt}
+
+CONVERSATION CONTEXT:
+{past_msgs if past_msgs else "This is the start of the conversation."}
+
+CURRENT USER MESSAGE:
+{user_message}
+
+CURRENT SEARCH EVIDENCE:
+{live_summary}
+
+IS_FOLLOW_UP: {is_follow_up}
+{f'ORIGINAL_CLAIM_BEING_REFERENCED: {original_claim}' if is_follow_up and original_claim else ''}
+
+INSTRUCTIONS:
+- Analyze the current user message in context of the conversation history
+- If they're asking for sources/evidence/more details about a PREVIOUS claim, provide those using the search evidence
+- If they're asking a follow-up question, answer conversationally using prior context
+- If they're making a NEW claim, fact-check it using the search evidence
+- When providing sources, be specific and reference them naturally in your response
+- Respond in the required JSON format only
+"""
+
+        # ------ 4️⃣ Get Gemini Output ------
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(final_prompt)
+
+        ai_raw = response.text.strip()
+
+        # Clean JSON output if model added extra text
+        parsed = None
+        try:
+            # First, try to extract JSON from markdown code blocks
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', ai_raw)
+            if json_match:
+                json_str = json_match.group(1).strip()
+                parsed = json.loads(json_str)
+            else:
+                # Try direct JSON parsing
+                parsed = json.loads(ai_raw)
+        except (json.JSONDecodeError, AttributeError) as e:
+            print(f"JSON parsing error: {e}")
+            print(f"Raw response: {ai_raw}")
+            # Fallback response
+            parsed = {
+                "agent_response": "I encountered an issue processing this claim. Please try again.",
+                "verdict": "UNKNOWN",
+                "confidence_score": 0,
+                "evidence_summary": live_summary
+            }
+
+        # Ensure confidence_score is an integer
+        if isinstance(parsed.get("confidence_score"), str):
+            try:
+                parsed["confidence_score"] = int(parsed["confidence_score"])
+            except (ValueError, TypeError):
+                parsed["confidence_score"] = 0
+
+        # ------ 5️⃣ Return response ------
         return jsonify({
-            'response': ai_response,
-            'status': 'success'
+            "response": parsed,
+            "search_evidence": live_summary,
+            "status": "success"
         })
-    
+
     except Exception as e:
+        print(f"Error in conversational_fact_check: {str(e)}")
         return jsonify({
-            'response': f"Sorry, I encountered an error: {str(e)}",
-            'status': 'error'
+            "response": {
+                "agent_response": f"An error occurred: {str(e)}",
+                "verdict": "UNKNOWN",
+                "confidence_score": 0,
+                "evidence_summary": ""
+            },
+            "status": "error"
         }), 500
-    
+
+from PIL import Image
+import traceback
+@app.route('/api/analyze-image', methods=['POST'])
+def analyze_image():
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+    print(f"\n🔧 Configuration:")
+    print(f"   GEMINI_API_KEY: {'✓ Set' if GEMINI_API_KEY else '✗ NOT SET'}")
+
+# Initialize Gemini
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        print("   ✓ Gemini API configured\n")
+    else:
+        model = None
+        print("   ✗ GEMINI_API_KEY not found in .env\n")
+
+        print("📨 POST /api/analyze-image")
+        
+    try:
+        if 'image' not in request.files:
+            print("✗ No image in request")
+            return jsonify({'error': 'No image provided'}), 400
+
+        file = request.files['image']
+        print(f"✓ File received: {file.filename}")
+
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Validate image
+        try:
+            print("  → Validating image...")
+            img = Image.open(file.stream)
+            img.verify()
+            file.stream.seek(0)
+            img = Image.open(file.stream)
+            print(f"  ✓ Image valid: {img.format} {img.size}")
+        except Exception as e:
+            print(f"  ✗ Image validation failed: {e}")
+            return jsonify({'error': f'Invalid image: {str(e)}'}), 400
+
+        # Send to Gemini
+        if not model:
+            print("✗ Gemini model not configured")
+            return jsonify({'error': 'Gemini API not configured'}), 500
+
+        try:
+            print("  → Sending to Gemini API...")
+            file.stream.seek(0)
+            response = model.generate_content([
+                "Analyze this image in short. give confidence score talling the image is ai generated or not",
+                img
+            ])
+            analysis = response.text
+            print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
+
+            return jsonify({
+                'success': True,
+                'analysis': analysis
+            }), 200
+
+        except Exception as e:
+            print(f"  ✗ Gemini error: {e}")
+            traceback.print_exc()
+            return jsonify({'error': f'Gemini error: {str(e)}'}), 500
+
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+from pathlib import Path
+@app.route('/api/analyze-video', methods=['POST'])
+def analyze_video():
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# Supported video formats
+    SUPPORTED_FORMATS = {'video/mp4', 'video/mpeg', 'video/webm', 'video/x-msvideo', 'video/quicktime'}
+    MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB limit for direct upload
+
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        print("✓ Gemini API configured")
+    try:
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video provided'}), 400
+        
+        file = request.files['video']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > MAX_FILE_SIZE:
+            return jsonify({'error': f'File too large. Maximum size is 20MB, got {file_size / 1024 / 1024:.2f}MB'}), 400
+        
+        # Check MIME type
+        if file.content_type not in SUPPORTED_FORMATS:
+            return jsonify({'error': f'Unsupported video format. Supported: {", ".join(SUPPORTED_FORMATS)}'}), 400
+        
+        print(f"✓ File received: {file.filename} ({file_size / 1024 / 1024:.2f}MB)")
+        
+        if not model:
+            return jsonify({'error': 'Gemini API not configured'}), 500
+        
+        # Read video bytes
+        video_bytes = file.read()
+        print("  → Sending to Gemini API...")
+        
+        # Use the correct MIME type
+        response = model.generate_content([
+            "Analyze this video and determine if it's AI-generated or real. Respond with:\n1. A clear verdict (is it AI-generated or real?)\n2. Confidence score as a percentage\n3. Key indicators you observed\n\nUse plain text only, no markdown formatting.",
+            {
+                'mime_type': file.content_type,
+                'data': video_bytes
+            }
+        ])
+        
+        analysis = response.text
+        print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis
+        }), 200
+        
+    except Exception as e:
+        print(f"✗ Error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
