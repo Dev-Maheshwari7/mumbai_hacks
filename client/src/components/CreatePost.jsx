@@ -4,6 +4,9 @@ import { credentialsContext, LanguageContext } from '../context/context'
 import { v4 as uuidv4 } from 'uuid';
 import { MdImage, MdVideoLibrary } from 'react-icons/md';
 import { t } from '../translations/translations';
+import { ToastContainer, toast ,Bounce} from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate,replace } from "react-router-dom";
 
 export default function CreatePost() {
   const [title, setTitle] = useState("");
@@ -13,8 +16,10 @@ export default function CreatePost() {
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [mediaType, setMediaType] = useState(null); // 'image' or 'video'
+  const navigate = useNavigate();
 
-// Time-ago calculator (social media style)
+
+  // Time-ago calculator (social media style)
   // Handle media file selection
   const handleMediaChange = (e) => {
     const file = e.target.files[0];
@@ -22,7 +27,19 @@ export default function CreatePost() {
 
     // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      // alert('File size must be less than 10MB');
+      toast.warn('File size must be less than 10MB', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        delay: 0,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
       return;
     }
 
@@ -53,37 +70,66 @@ export default function CreatePost() {
 
   const handlePost = async () => {
     if (!title || !content) {
-      alert("Please fill the title and content.");
+      // alert("Please fill the title and content.");
+      toast.error('Please fill the title and content.', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        delay: 0,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+
       return;
     }
 
     const postTimestamp = Date.now();
 
     const newPost = {
-      name:value.userName,
-      email:value.email,
+      name: value.userName,
+      email: value.email,
       title,
       content,
       timestamp: postTimestamp,
-      post_id:uuidv4()+`-${value.userName}`,
+      post_id: uuidv4() + `-${value.userName}`,
       media: mediaPreview, // base64 encoded media
       mediaType: mediaType // 'image' or 'video'
     };
-    console.log("Post Created with media:", { 
-      hasMedia: !!mediaPreview, 
+    console.log("Post Created with media:", {
+      hasMedia: !!mediaPreview,
       mediaType,
-      mediaLength: mediaPreview?.length 
+      mediaLength: mediaPreview?.length
     });
-    let response=await fetch('http://localhost:5000/api/auth/savePost', { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...newPost }) })
-    let result=await response.json();
-    console.log(result.message);
-    
+    let response = await fetch('http://localhost:5000/api/auth/savePost', { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...newPost }) })
+    let result = await response.json();
+    // console.log(result.message);
+
     if (response.ok) {
-      alert('Post created successfully!');
+      toast.success('Post created successfully!', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        delay: 0,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+
+      setTimeout(() => {
+        navigate('/',replace);
+      }, 2200);
+      // alert('Post created successfully!');
       // Reload page to show new post
-      window.location.reload();
+      // window.location.reload();
     }
-    
+
     // reset fields
     setTitle("");
     setContent("");

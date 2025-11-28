@@ -4,6 +4,8 @@ import Post from '../components/Post';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { t } from '../translations/translations';
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Profile({ onLogout }) {
   const [user, setUser] = useState(null);
@@ -51,7 +53,19 @@ export default function Profile({ onLogout }) {
           setUserPosts(postsData.posts.reverse());
         }
       } catch (err) {
-        console.error('Error fetching user data:', err);
+        // console.error('Error fetching user data:', err);
+        toast.error(`Error fetching user:', ${err}`, {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          delay: 0,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
       } finally {
         setLoading(false);
       }
@@ -106,7 +120,7 @@ export default function Profile({ onLogout }) {
             <option value="pt">Português</option>
             <option value="ru">Русский</option>
           </select>
-          
+
           <p className="font-medium">{user?.username}</p>
           <button
             className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"

@@ -40,6 +40,8 @@ import { credentialsContext, LanguageContext } from './context/context';
 import FollowersPage from "./pages/FollowersPage.jsx";
 import FollowingPage from "./pages/FollowingPage.jsx";
 import ProtectedProfile from "./pages/ProtectedProfile.jsx";
+import { ToastContainer,Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   const [userName, setuserName] = useState("")
@@ -79,83 +81,94 @@ const App = () => {
 
   // used the react icons so installed it from npm
   //installed the uuid from npm
+  //npm i --save react-toastify install this too
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        closeOnClick
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <LanguageContext.Provider value={{ language, setLanguage }}>
         <credentialsContext.Provider value={{ email, setemail, userName, setuserName }}>
           <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/followers/:email" element={<FollowersPage />} />
-          <Route path="/following/:email" element={<FollowingPage />} />
-          <Route path="/user/:email" element={<ProtectedProfile />} />
-          <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
-          <Route
-            path="/"
-            element={
-              isSignedIn ? (
-                <Homepage onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              isSignedIn ? (
-                <Profile onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/create"
-            element={
-              isSignedIn ? (
-                <CreatePostPage />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/aiagent"
-            element={
-              isSignedIn ? (
-                <Aiagent />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/trending"
-            element={
-              isSignedIn ? (
-                <Trending />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/conversation"
-            element={
-              isSignedIn ? (
-                <Conversation />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
+            <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/followers/:email" element={<FollowersPage />} />
+            <Route path="/following/:email" element={<FollowingPage />} />
+            <Route path="/user/:email" element={<ProtectedProfile />} />
+            <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
+            <Route
+              path="/"
+              element={
+                isSignedIn ? (
+                  <Homepage onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                isSignedIn ? (
+                  <Profile onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/create"
+              element={
+                isSignedIn ? (
+                  <CreatePostPage />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/aiagent"
+              element={
+                isSignedIn ? (
+                  <Aiagent />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/trending"
+              element={
+                isSignedIn ? (
+                  <Trending />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/conversation"
+              element={
+                isSignedIn ? (
+                  <Conversation />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route path="*" element={<Navigate to={isSignedIn ? "/" : "/login"} replace />} />
           </Routes>
         </credentialsContext.Provider>
       </LanguageContext.Provider>
     </>
-  )     
+  )
 }
 
 export default App

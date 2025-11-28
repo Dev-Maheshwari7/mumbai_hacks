@@ -11,28 +11,30 @@
 
 // export default Login
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { replace, useNavigate } from 'react-router-dom'
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({ 
-    email: '', 
-    password: '' 
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
   })
-  const [error, setError] = useState('')
+  // const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    setFormData({ 
-      ...formData, 
-      [e.target.name]: e.target.value 
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
     })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    // setError('')
 
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -44,7 +46,20 @@ export default function Login({ onLoginSuccess }) {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.message || 'Login failed')
+        // setError(data.message || 'Login failed')
+        toast.error(`${data.message || "Login failed"}`, {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          delay: 0,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
+
         return
       }
 
@@ -52,9 +67,35 @@ export default function Login({ onLoginSuccess }) {
       // console.log('Token saved:', data.token)
       setFormData({ email: '', password: '' })
       onLoginSuccess()
-      navigate('/')
+      toast.success("Logged-in Successfully", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        delay: 0,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+      setTimeout(() => {
+        navigate('/',replace)
+      }, 2200);
     } catch (err) {
-      setError('Error connecting to server: ' + err.message)
+      toast.error(`Error connecting to server: + ${err.message}`, {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        delay: 0,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+      // setError('Error connecting to server: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -63,7 +104,7 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div>
       <h2>Login</h2>
-      {error && <p>{error}</p>}
+      {/* {error && <p>{error}</p>} */}
       <input
         type="email"
         name="email"

@@ -4,8 +4,10 @@ import Post from '../components/Post'
 import CreatePost from '../components/CreatePost'
 import { useContext } from 'react';
 import { credentialsContext, LanguageContext } from '../context/context'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, replace } from 'react-router-dom'
 import { t } from '../translations/translations'
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Homepage({ onLogout }) {
   const [user, setUser] = useState(null)
@@ -38,7 +40,19 @@ export default function Homepage({ onLogout }) {
         value.setemail(data.user.email)
         value.setuserName(data.user.username)
       } catch (err) {
-        console.error('Error fetching user:', err)
+        // console.error('Error fetching user:', err)
+        toast.error(`Error fetching user:', ${err}`, {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          delay: 0,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
       } finally {
         setLoading(false)
       }
@@ -48,7 +62,20 @@ export default function Homepage({ onLogout }) {
   }, [onLogout])
 
   const handleLogout = () => {
+    toast.success("Successfully logged out", {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      delay: 0,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+      transition: Bounce,
+    });
     localStorage.removeItem('token')
+
     onLogout()
   }
 
@@ -93,7 +120,7 @@ export default function Homepage({ onLogout }) {
               <option value="pt">Português</option>
               <option value="ru">Русский</option>
             </select>
-            
+
             <p className="text-sm text-gray-700 font-medium">{user?.username}</p>
             <button
               className="text-sm text-red-600 hover:text-red-700 transition-colors font-medium"
@@ -110,7 +137,7 @@ export default function Homepage({ onLogout }) {
         <main className="w-full h-[calc(100vh-80px)] overflow-y-scroll px-8">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">{t('Feed', language)}</h2>
-            <PostsFeed targetLanguage={language} /> 
+            <PostsFeed targetLanguage={language} />
           </div>
         </main>
       </div>

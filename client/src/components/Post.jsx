@@ -6,6 +6,9 @@ import { IoSaveOutline } from "react-icons/io5";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { t } from '../translations/translations';
 import { LanguageContext } from '../context/context';
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import ConfirmDialog from "./ConfirmDialog";
 
 // Format numbers like 1K, 2M
 function formatNumber(num) {
@@ -54,7 +57,7 @@ const Post = ({
     onFollowToggle      // function
 }) => {
     const { language } = useContext(LanguageContext);
-    
+
     // Debug media
     // if (media) {
     //     console.log(`Post ${post_id} has media:`, { mediaType, mediaLength: media?.length });
@@ -81,6 +84,8 @@ const Post = ({
     const [comments, setComments] = useState([]);
     const [inputComment, setInputComment] = useState("");
     const [imageEnlarged, setImageEnlarged] = useState(false);
+
+    const [showConfirm, setShowConfirm] = useState(false);
 
     // Translate content when language changes
     useEffect(() => {
@@ -124,7 +129,19 @@ const Post = ({
                 setShowOriginal(false);
             }
         } catch (err) {
-            console.error('Translation error:', err);
+            // console.error('Translation error:', err);
+            toast.error(`Translation error:', ${err}`, {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: false,
+                delay: 0,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+            });
         } finally {
             setIsTranslating(false);
         }
@@ -274,9 +291,10 @@ const Post = ({
 
     // Delete post
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this post?')) {
-            return;
-        }
+        setShowConfirm(false);
+        // if (!window.confirm('Are you sure you want to delete this post?')) {
+        //     return;
+        // }
 
         try {
             const token = localStorage.getItem('token');
@@ -292,16 +310,52 @@ const Post = ({
             const data = await res.json();
 
             if (res.ok) {
-                alert('Post deleted successfully!');
+                // alert('Post deleted successfully!');
+                toast.success('Post deleted successfully!', {
+                    position: "top-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: false,
+                    delay: 0,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                    transition: Bounce,
+                });
                 if (onDeleteSuccess) {
                     onDeleteSuccess(post_id);
                 }
             } else {
-                alert(data.message || 'Failed to delete post');
+                // alert(data.message || 'Failed to delete post');
+                toast.error(`${data.message || 'Failed to delete post'}`, {
+                    position: "top-right",
+                    autoClose: 2000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: false,
+                    delay: 0,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                    transition: Bounce,
+                });
             }
         } catch (err) {
-            console.error("Error deleting post:", err);
-            alert('Error deleting post');
+            // console.error("Error deleting post:", err);
+            toast.error(`Error deleting post:, ${err}`, {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: false,
+                delay: 0,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+            });
+            // alert('Error deleting post');
         }
     };
 
@@ -323,11 +377,10 @@ const Post = ({
                             {userEmail !== postOwnerEmail && onFollowToggle && (
                                 <button
                                     onClick={onFollowToggle}
-                                    className={`px-4 py-1.5 text-xs rounded-lg font-semibold transition-all ${
-                                        isFollowingInitial 
-                                            ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
-                                            : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
-                                    }`}
+                                    className={`px-4 py-1.5 text-xs rounded-lg font-semibold transition-all ${isFollowingInitial
+                                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                                        }`}
                                 >
                                     {isFollowingInitial ? "Following" : "Follow"}
                                 </button>
@@ -337,7 +390,7 @@ const Post = ({
                 </div>
                 {isOwner && (
                     <button
-                        onClick={handleDelete}
+                        onClick={() => { setShowConfirm(true), handleDelete }}
                         className="text-sm text-red-600 hover:text-red-700 transition-colors shrink-0 font-medium"
                     >
                         Delete
@@ -364,7 +417,7 @@ const Post = ({
                     <p className="text-sm text-indigo-600 italic mt-1 font-medium">{t('Translating...', language)}</p>
                 )}
             </div>
-            
+
             {/* Content */}
             <p className="text-gray-700 text-sm mb-4 leading-relaxed whitespace-pre-line">
                 {showOriginal ? content : translatedContent}
@@ -384,10 +437,10 @@ const Post = ({
                             }}
                         />
                     </div>
-                    
+
                     {/* Enlarged Image Modal */}
                     {imageEnlarged && (
-                        <div 
+                        <div
                             className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
                             onClick={() => setImageEnlarged(false)}
                         >
@@ -422,25 +475,23 @@ const Post = ({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mb-4">
-                <button 
-                    onClick={() => handleReaction("up")} 
-                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${
-                        clicked === "up" 
-                            ? "text-green-600" 
-                            : "text-green-500 hover:text-green-600"
-                    }`}
+                <button
+                    onClick={() => handleReaction("up")}
+                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${clicked === "up"
+                        ? "text-green-600"
+                        : "text-green-500 hover:text-green-600"
+                        }`}
                 >
                     {clicked === "up" ? <BsFillHandThumbsUpFill /> : <BsHandThumbsUp />}
                     <span className="text-sm">{formatNumber(upvotes)}</span>
                 </button>
 
-                <button 
-                    onClick={() => handleReaction("down")} 
-                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${
-                        clicked === "down" 
-                            ? "text-red-600" 
-                            : "text-red-500 hover:text-red-600"
-                    }`}
+                <button
+                    onClick={() => handleReaction("down")}
+                    className={`text-lg transition-all font-semibold flex items-center gap-1.5 ${clicked === "down"
+                        ? "text-red-600"
+                        : "text-red-500 hover:text-red-600"
+                        }`}
                 >
                     {clicked === "down" ? <BsFillHandThumbsDownFill /> : <BsHandThumbsDown />}
                     <span className="text-sm">{formatNumber(downvotes)}</span>
@@ -489,6 +540,13 @@ const Post = ({
                     </div>
                 )}
             </div>
+            <ConfirmDialog
+                open={showConfirm}
+                title="Delete Post?"
+                message="Are you sure you want to delete this post? This action cannot be undone."
+                onConfirm={handleDelete}
+                onCancel={() => setShowConfirm(false)}
+            />
         </div>
     );
 };
