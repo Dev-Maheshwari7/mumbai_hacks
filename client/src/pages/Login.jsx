@@ -261,12 +261,12 @@ export default function Login({ onLoginSuccess }) {
 
         {/* Right Side - Login Form */}
         <div style={styles.rightSide}>
-          <span 
+          {/* <span 
             style={styles.backArrow}
             onClick={() => navigate(-1)}
           >
             ←
-          </span>
+          </span> */}
           
           <h2 style={styles.title}>Sign In</h2>
           <p style={styles.subtitle}>

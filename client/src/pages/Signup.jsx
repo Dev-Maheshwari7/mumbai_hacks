@@ -271,12 +271,12 @@ export default function Signup({ onSignupSuccess }) {
 
         {/* Right Side - Signup Form */}
         <div style={styles.rightSide}>
-          <span 
+          {/* <span 
             style={styles.backArrow}
             onClick={() => navigate(-1)}
           >
             ←
-          </span>
+          </span> */}
           
           <h2 style={styles.title}>Create Account</h2>
           <p style={styles.subtitle}>
