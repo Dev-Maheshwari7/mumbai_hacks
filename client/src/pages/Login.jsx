@@ -280,11 +280,11 @@ export default function Login({ onLoginSuccess }) {
           </p>
 
           {/* Error Message */}
-          {error && (
+          {/* {error && (
             <div style={styles.errorBox}>
               <p style={styles.errorText}>{error}</p>
             </div>
-          )}
+          )} */}
 
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
