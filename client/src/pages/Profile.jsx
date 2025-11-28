@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { credentialsContext, LanguageContext } from '../context/context';
 import Post from '../components/Post';
+import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
 import { t } from '../translations/translations';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -89,47 +89,8 @@ export default function Profile({ onLogout }) {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 flex flex-col">
-      {/* Top Navbar */}
-      <nav className="w-full bg-white shadow-md px-6 py-3 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition"
-          >
-            <FaArrowLeft />
-            <span>{t('Back to Home', language)}</span>
-          </button>
-          <h1 className="text-xl font-bold text-blue-600">{t('My Profile', language)}</h1>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Language Selector */}
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="px-3 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer"
-          >
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="hi">हिन्दी</option>
-            <option value="zh-cn">中文</option>
-            <option value="ja">日本語</option>
-            <option value="ar">العربية</option>
-            <option value="pt">Português</option>
-            <option value="ru">Русский</option>
-          </select>
-
-          <p className="font-medium">{user?.username}</p>
-          <button
-            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            onClick={handleLogout}
-          >
-            {t('Logout', language)}
-          </button>
-        </div>
-      </nav>
+      {/* Navbar */}
+      <Navbar user={user} onLogout={handleLogout} />
 
       {/* Profile Content */}
       <div className="max-w-4xl mx-auto w-full px-4 mt-8">

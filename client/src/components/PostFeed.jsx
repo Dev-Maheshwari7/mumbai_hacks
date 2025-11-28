@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import Post from "./Post";
 import { credentialsContext } from "../context/context";
 
-const PostsFeed = ({ targetLanguage = 'en' }) => {
+const PostsFeed = ({ targetLanguage = 'en', searchQuery = '' }) => {
   const [posts, setPosts] = useState([]);
   const { userName, email } = useContext(credentialsContext); // get current user
   const [followingStatus, setFollowingStatus] = useState({});
@@ -115,29 +115,49 @@ function normalizeTimestamp(post) {
 }
 
 
+// Filter posts based on search query
+const filteredPosts = posts.filter((p) => {
+  if (!searchQuery.trim()) return true;
+  
+  const query = searchQuery.toLowerCase();
+  const titleMatch = p.title?.toLowerCase().includes(query);
+  const contentMatch = p.content?.toLowerCase().includes(query);
+  const usernameMatch = p.username?.toLowerCase().includes(query);
+  
+  return titleMatch || contentMatch || usernameMatch;
+});
+
 return (
   <div className="flex flex-col items-center mt-6">
-    {posts.map((p, i) => (
-      <Post
-        key={i}
-        post_id={p.post_id}
-        username={p.username}
-        title={p.title}
-        content={p.content}
-        timestamp={normalizeTimestamp(p)}
-        userEmail={email}      // current logged-in user
-        userUsername={userName} // current logged-in username
-        postOwnerEmail={p.email} // post owner's email
-        likes={p.likes || []}  // default empty array
-        dislikes={p.dislikes || []} // default empty array
-        media={p.media}
-        mediaType={p.mediaType}
-        targetLanguage={targetLanguage}
-        onDeleteSuccess={handleDeleteSuccess}
-        isFollowingInitial={followingStatus[p.email]}   // NEW
-        onFollowToggle={() => handleFollowToggle(p.email)}  // NEW
-      />
-    ))}
+    {filteredPosts.length === 0 ? (
+      <div className="text-center py-12">
+        <p className="text-gray-600 text-lg">
+          {searchQuery ? `No posts found matching "${searchQuery}"` : 'No posts available'}
+        </p>
+      </div>
+    ) : (
+      filteredPosts.map((p, i) => (
+        <Post
+          key={i}
+          post_id={p.post_id}
+          username={p.username}
+          title={p.title}
+          content={p.content}
+          timestamp={normalizeTimestamp(p)}
+          userEmail={email}      // current logged-in user
+          userUsername={userName} // current logged-in username
+          postOwnerEmail={p.email} // post owner's email
+          likes={p.likes || []}  // default empty array
+          dislikes={p.dislikes || []} // default empty array
+          media={p.media}
+          mediaType={p.mediaType}
+          targetLanguage={targetLanguage}
+          onDeleteSuccess={handleDeleteSuccess}
+          isFollowingInitial={followingStatus[p.email]}   // NEW
+          onFollowToggle={() => handleFollowToggle(p.email)}  // NEW
+        />
+      ))
+    )}
   </div>
 );
 };

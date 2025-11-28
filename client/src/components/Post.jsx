@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { BsHandThumbsUp, BsFillHandThumbsUpFill } from "react-icons/bs";
 import { BsHandThumbsDown, BsFillHandThumbsDownFill } from "react-icons/bs";
 import { MdSaveAlt, MdDelete } from "react-icons/md";
 import { IoSaveOutline } from "react-icons/io5";
 import { FaRegShareFromSquare } from "react-icons/fa6";
+import { AiOutlineCheckCircle, AiFillCheckCircle } from "react-icons/ai";
+import { HiSparkles } from "react-icons/hi2";
 import { t } from '../translations/translations';
 import { LanguageContext } from '../context/context';
 import { ToastContainer, toast, Bounce } from 'react-toastify';
@@ -57,6 +60,7 @@ const Post = ({
     onFollowToggle      // function
 }) => {
     const { language } = useContext(LanguageContext);
+    const navigate = useNavigate();
 
     // Debug media
     // if (media) {
@@ -362,6 +366,11 @@ const Post = ({
     // Check if current user is the post owner
     const isOwner = postOwnerEmail === userEmail;
 
+    // AI Fact Check handler - Navigate to aiagent page
+    const handleAiCheck = () => {
+        navigate('/conversation');
+    };
+
     return (
         <div className="bg-white rounded-xl p-6 w-full max-w-2xl mb-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
             {/* Header */}
@@ -499,6 +508,16 @@ const Post = ({
 
                 <span className="text-xs text-gray-300">•</span>
                 <span className="text-sm text-gray-600 font-medium">{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
+                
+                <span className="text-xs text-gray-300">•</span>
+                <button 
+                    onClick={handleAiCheck}
+                    className="text-lg transition-all font-semibold flex items-center gap-1.5 text-purple-600 hover:text-purple-700"
+                    title="Analyse with AI"
+                >
+                    <HiSparkles />
+                    <span className="text-sm">Analyse with AI</span>
+                </button>
             </div>
 
             {/* Comment Input */}
