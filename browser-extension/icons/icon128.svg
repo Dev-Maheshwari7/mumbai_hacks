@@ -1,0 +1,24 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded rectangle background -->
+  <rect width="128" height="128" rx="24" fill="url(#grad1)"/>
+  
+  <!-- Magnifying glass -->
+  <circle cx="50" cy="50" r="22" fill="none" stroke="white" stroke-width="6"/>
+  <line x1="66" y1="66" x2="85" y2="85" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Checkmark inside magnifying glass -->
+  <path d="M 40 50 L 47 57 L 60 42" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Exclamation mark -->
+  <circle cx="95" cy="95" r="18" fill="#FFD700"/>
+  <line x1="95" y1="85" x2="95" y2="95" stroke="#764ba2" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="95" cy="101" r="2.5" fill="#764ba2"/>
+</svg>

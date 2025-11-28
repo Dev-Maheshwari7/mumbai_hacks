@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FactSure - AI Fact Checker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🔍 FactSure</h1>
+      <p class="subtitle">AI-Powered Fact Checking</p>
+    </div>
+
+    <!-- URL Input Section -->
+    <div class="url-section">
+      <input 
+        type="text" 
+        id="urlInput" 
+        placeholder="Paste article URL here..."
+        class="url-input"
+      >
+      <button id="getCurrentUrl" class="btn-secondary" title="Get current page URL">
+        📄 Current Page
+      </button>
+      <button id="checkUrl" class="btn-primary">
+        Check Claim
+      </button>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="chat-container" id="chatContainer">
+      <!-- Welcome Message -->
+      <div class="message ai-message">
+        <div class="message-content">
+          <p>👋 Hello! I'm your AI fact-checking agent.</p>
+          <p>Paste a URL above or type your claim below, and I'll investigate it for you!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading" id="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>AI is analyzing...</p>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <textarea 
+        id="messageInput" 
+        placeholder="Type your claim or ask a question..."
+        rows="2"
+      ></textarea>
+      <button id="sendMessage" class="btn-send">
+        Send ➤
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button id="clearChat" class="btn-clear">Clear Chat</button>
+      <a href="#" id="openFullApp" class="link">Open Full App</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

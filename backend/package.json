@@ -1,0 +1,23 @@
+{
+  "name": "whatsapp-fact-checker",
+  "version": "1.0.0",
+  "description": "Free WhatsApp Fact-Checking Bot using whatsapp-web.js",
+  "main": "whatsapp_bot_free.js",
+  "scripts": {
+    "start": "node whatsapp_bot_free.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "whatsapp",
+    "fact-checking",
+    "bot",
+    "free"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0",
+    "axios": "^1.6.0"
+  }
+}

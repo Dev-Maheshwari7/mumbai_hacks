@@ -73,7 +73,7 @@ export default function ConversationalFactChecker() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/conversational-fact-check', {
+      const response = await fetch('hhttp://localhost:5173/conversation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

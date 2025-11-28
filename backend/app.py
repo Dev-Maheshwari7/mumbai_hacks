@@ -13,7 +13,13 @@ from datetime import timedelta
 import os
 from time import time
 from dotenv import load_dotenv
-from googletrans import Translator
+from deep_translator import GoogleTranslator
+import google.generativeai as genai
+import requests
+from bs4 import BeautifulSoup
+import re
+from urllib.parse import urlparse
+from duckduckgo_search import DDGS
 
 load_dotenv()
 
@@ -37,8 +43,133 @@ db = client['social_media_db']
 users_collection = db['users']
 post_collection = db['posts']
 
-# Initialize Translator
-translator = Translator()
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Helper function to scrape URL content
+def scrape_url_content(url):
+    """Extract text content from a URL"""
+    try:
+        # Check if it's an X/Twitter URL
+        if 'twitter.com' in url or 'x.com' in url:
+            return scrape_twitter_content(url)
+        
+        # Regular HTTP scraping for other sites
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(['script', 'style', 'nav', 'footer', 'header']):
+            script.decompose()
+        
+        # Get text
+        text = soup.get_text()
+        
+        # Clean up text
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        text = ' '.join(chunk for chunk in chunks if chunk)
+        
+        # Limit text length to avoid token limits
+        max_chars = 8000
+        if len(text) > max_chars:
+            text = text[:max_chars] + "... [content truncated]"
+        
+        return text
+    except Exception as e:
+        return f"Error scraping URL: {str(e)}"
+
+def scrape_twitter_content(url):
+    """Scrape X/Twitter content using Selenium"""
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.common.exceptions import TimeoutException
+    from webdriver_manager.chrome import ChromeDriverManager
+    
+    try:
+        # Setup Chrome options
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Initialize driver with webdriver-manager
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.get(url)
+        
+        # Wait for tweet content to load
+        wait = WebDriverWait(driver, 10)
+        
+        try:
+            # Try to find tweet text (multiple selectors as X changes them frequently)
+            tweet_selectors = [
+                "article[data-testid='tweet']",
+                "div[data-testid='tweetText']",
+                "div[lang]",
+                "article div[lang]"
+            ]
+            
+            content = ""
+            for selector in tweet_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        for elem in elements[:3]:  # Get first 3 matching elements
+                            text = elem.text.strip()
+                            if text and len(text) > 10:  # Ignore very short matches
+                                content += text + "\n\n"
+                        if content:
+                            break
+                except:
+                    continue
+            
+            driver.quit()
+            
+            if content:
+                return content.strip()
+            else:
+                return "Could not extract tweet content. The page structure may have changed or the tweet may be protected."
+                
+        except TimeoutException:
+            driver.quit()
+            return "Timeout while loading tweet. The tweet may be protected or deleted."
+            
+    except Exception as e:
+        return f"Error scraping Twitter/X: {str(e)}"
+
+def detect_urls(text):
+    """Detect URLs in text"""
+    url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    return url_pattern.findall(text)
+
+def search_duckduckgo(query, max_results=5):
+    """Search DuckDuckGo for real-time information"""
+    try:
+        with DDGS() as ddgs:
+            results = []
+            for r in ddgs.text(query, max_results=max_results):
+                results.append({
+                    'title': r.get('title', ''),
+                    'body': r.get('body', ''),
+                    'url': r.get('href', '')
+                })
+            return results
+    except Exception as e:
+        print(f"DuckDuckGo search error: {str(e)}")
+        return []
 
 # Routes
 
@@ -551,13 +682,6 @@ def fact_check():
         'results': results
     })
 
-from flask import Flask, request, jsonify
-import google.generativeai as genai
-
-# Configure Gemini API
-    
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
 @app.route('/api/auth/addComment', methods=['POST'])
 @jwt_required()
 def add_comment():
@@ -636,13 +760,13 @@ def translate_text():
         if not text:
             return jsonify({'message': 'Text is required'}), 400
         
-        # Perform translation
-        translation = translator.translate(text, dest=target_lang)
+        # Perform translation using deep-translator
+        translated_text = GoogleTranslator(source='auto', target=target_lang).translate(text)
         
         return jsonify({
             'original': text,
-            'translated': translation.text,
-            'source_lang': translation.src,
+            'translated': translated_text,
+            'source_lang': 'auto',
             'target_lang': target_lang
         }), 200
         
@@ -665,7 +789,9 @@ def trending_misinformation():
         Structure your response exactly like this for each misinformation:
         Misinformation: [the misinformation claim]
         Source: [where it typically comes from]
-        
+        Give only small compact answers and no special characters like * and # or another characters
+        Keep responses concise and clear
+        The first line should clearly state whether the claim is True or False
         Return ONLY these 4 items, no extra text."""
         
         response = model.generate_content(prompt)
@@ -712,23 +838,73 @@ def conversational_fact_check():
     conversation_history = data.get('conversation_history', [])
     
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        # Detect URLs in the message
+        urls = detect_urls(user_message)
+        scraped_content = ""
+        scrape_failed = False
+        enhanced_message = user_message
+        search_results_text = ""
+        
+        if urls:
+            # URL found - use scraping only (no DuckDuckGo search)
+            for url in urls:
+                content = scrape_url_content(url)
+                
+                # Check if scraping failed (common issues)
+                if "JavaScript is not available" in content or "Something went wrong" in content or "Error scraping" in content:
+                    scrape_failed = True
+                    # Don't include failed scrape content
+                else:
+                    scraped_content += f"\n\n--- Content from {url} ---\n{content}\n"
+            
+            # If scraping failed, ask user to provide content directly
+            if scrape_failed and not scraped_content:
+                enhanced_message = user_message
+            elif scraped_content:
+                enhanced_message = f"{user_message}\n\nI've extracted the following content from the URL(s):{scraped_content}"
+        else:
+            # No URL - perform DuckDuckGo search for real-time information
+            try:
+                # Extract key claim/topic for search
+                search_query = user_message[:200]  # Use first 200 chars as search query
+                search_results = search_duckduckgo(search_query, max_results=5)
+                
+                if search_results:
+                    search_results_text = "\n\n--- Recent Web Search Results ---\n"
+                    for i, result in enumerate(search_results, 1):
+                        search_results_text += f"\n{i}. {result['title']}\n"
+                        search_results_text += f"   {result['body']}\n"
+                        search_results_text += f"   Source: {result['url']}\n"
+                    
+                    enhanced_message += search_results_text
+            except Exception as search_error:
+                print(f"Search error: {str(search_error)}")
+                # Continue without search results
+        
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         # Build conversation context
         system_prompt = """You are an expert AI fact-checking agent. Your job is to:
-1. Listen to claims from users
-2. Ask clarifying questions to understand the claim better
-3. Provide evidence-based analysis
-4. Search for contradictory or supporting information
-5. Give a final verdict on whether the claim is TRUE, FALSE, or UNVERIFIABLE
-6. Be conversational and friendly, like a detective investigating claims
+1. Analyze claims from users about health, science, politics, or any topic
+2. Provide evidence-based fact-checking with credible sources
+3. Give a clear verdict: TRUE, FALSE, MISLEADING, PARTIALLY TRUE, or UNVERIFIABLE
+4. Explain your reasoning with specific facts and scientific evidence
+5. Be conversational and friendly, like a detective investigating claims
 
-Keep responses concise (2-3 sentences) and ask follow-up questions to dig deeper.
-After you have enough information, provide a clear verdict with reasoning."""
+When fact-checking:
+- Break down the claim into specific testable statements
+- Look for scientific consensus or credible sources
+- Identify any misleading framing or context
+- Give only small compact answers and no special characters like * and # or another characters
+- Keep responses concise and clear
+- The first line should clearly state whether the claim is True or False
+
+If you have web search results, use them to verify current information and cite specific sources.
+If a URL is shared but you can't access the content (like X/Twitter posts that need JavaScript), politely ask the user to copy and paste the actual claim text."""
         
         # Prepare messages for Gemini
         messages = [{"role": msg["role"], "content": msg["content"]} for msg in conversation_history]
-        messages.append({"role": "user", "content": user_message})
+        messages.append({"role": "user", "content": enhanced_message})
         
         # Generate response
         response = model.generate_content(system_prompt + "\n\nConversation:\n" + 
@@ -738,7 +914,8 @@ After you have enough information, provide a clear verdict with reasoning."""
         
         return jsonify({
             'response': ai_response,
-            'status': 'success'
+            'status': 'success',
+            'search_performed': bool(search_results_text)
         })
     
     except Exception as e:
