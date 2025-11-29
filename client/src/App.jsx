@@ -151,8 +151,9 @@ const App = () => {
             <Route
               path="/trending"
               element={
-                isSignedIn ? (
-                  <Trending />
+                isSignedIn ? (<>
+                <Navbar/>
+                  <Trending /></>
                 ) : (
                   <Navigate to="/login" replace />
                 )

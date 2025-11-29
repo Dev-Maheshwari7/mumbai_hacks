@@ -20,7 +20,6 @@ import {
   HiX,
 } from 'react-icons/hi';
 import SuggestedUsersSidebar from '../components/SuggestedUsersSidebar';
-import Trending from './Trending';
 import Navbar from '../components/Navbar';
 
 export default function Homepage({ onLogout }) {
@@ -352,8 +351,6 @@ export default function Homepage({ onLogout }) {
           </div>
 
         </div>
-        <PostsFeed targetLanguage={language} searchQuery={searchQuery} />
-
 
         <div className="flex-1 h-[calc(100vh-64px)] overflow-y-auto px-8 py-6">
           <div className="max-w-4xl mx-auto">
@@ -361,9 +358,9 @@ export default function Homepage({ onLogout }) {
           </div>
         </div>
       </main>
-      {/* RIGHT SIDEBAR - TRENDING SECTION */}
+      {/* RIGHT SIDEBAR - SUGGESTED USERS */}
       <aside className="w-80 bg-white border-l border-gray-200 shadow-sm sticky top-0 h-screen overflow-y-auto p-6">
-        <Trending />
+        <SuggestedUsersSidebar />
       </aside>
     </div>
   );

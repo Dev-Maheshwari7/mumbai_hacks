@@ -12,6 +12,8 @@ import {
   HiPencil,
   HiLogout,
   HiSearch,
+  HiPhotograph,
+  HiVideoCamera,
 } from "react-icons/hi";
 import { HiChatBubbleLeftRight, HiLink } from "react-icons/hi2";
 import SearchModal from "./SearchModal";
@@ -68,9 +70,11 @@ export default function Navbar({ user, onLogout }) {
               { icon: <HiHome className="w-5 h-5 text-purple-600" />, label: "Home", path: "/" },
               { icon: <HiUser className="w-5 h-5 text-purple-600" />, label: "My Profile", path: "/profile" },
               { icon: <HiPencil className="w-5 h-5 text-purple-600" />, label: "Create Post", path: "/create" },
-              // { icon: <HiSearch className="w-5 h-5 text-blue-600" />, label: "Search", path: "/search" },
+              { icon: <HiSearch className="w-5 h-5 text-purple-600" />, label: "Trending", path: "/trending" },
               { icon: <HiChatBubbleLeftRight className="w-5 h-5 text-purple-600" />, label: "Chatbot", path: "/conversation" },
               { icon: <HiLink className="w-5 h-5 text-purple-600" />, label: "Link Checker", path: "/aiagent" },
+              { icon: <HiPhotograph className="w-5 h-5 text-purple-600" />, label: "Image Analysis", path: "/analyze" },
+              { icon: <HiVideoCamera className="w-5 h-5 text-purple-600" />, label: "Video Analysis", path: "/video" },
               { icon: <HiLogout className="w-5 h-5" />, label: "Logout", path: "logout" },
             ].map(({ icon, label, path }) => (
               <li key={label}>

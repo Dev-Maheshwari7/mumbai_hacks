@@ -132,178 +132,195 @@ export default function CreatePost() {
   };
 
   return (
-    <div
-      className="
-        min-h-screen
-        flex
-        flex-col
-        bg-gradient-to-br from-sky-300 via-sky-500 to-blue-900
-      "
-    >
-      {/* Area under navbar */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        {/* Big blue background panel */}
-        <div
-          className="
-            relative
-            w-full
-            max-w-xl
-            rounded-3xl
-            overflow-hidden
-            bg-gradient-to-r from-sky-500 via-blue-700 to-slate-900
-            shadow-[0_24px_80px_rgba(15,23,42,0.7)]
-          "
+    <div>
+
+      {/* Title */}
+      <input
+        type="text"
+        placeholder={t("Post title...", language)}
+        name="title"
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          marginBottom: '16px',
+          fontSize: '14px',
+          backgroundColor: 'white',
+          border: '1px solid #d1d5db',
+          borderRadius: '8px',
+          color: '#1f2937',
+          outline: 'none',
+          transition: 'all 0.2s ease'
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#9333ea';
+          e.target.style.boxShadow = '0 0 0 3px rgba(147, 51, 234, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#d1d5db';
+          e.target.style.boxShadow = 'none';
+        }}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+
+      {/* Text Content */}
+      <textarea
+        placeholder={t(
+          "Write your news or information...",
+          language
+        )}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          height: '120px',
+          marginBottom: '16px',
+          fontSize: '14px',
+          backgroundColor: 'white',
+          border: '1px solid #d1d5db',
+          borderRadius: '8px',
+          resize: 'none',
+          color: '#1f2937',
+          outline: 'none',
+          transition: 'all 0.2s ease'
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#9333ea';
+          e.target.style.boxShadow = '0 0 0 3px rgba(147, 51, 234, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#d1d5db';
+          e.target.style.boxShadow = 'none';
+        }}
+        name="content"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+      />
+
+      {/* Media Upload */}
+      <div style={{ marginBottom: '16px' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            padding: '16px',
+            border: '2px dashed #d1d5db',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            backgroundColor: '#f9fafb',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f3e8ff';
+            e.currentTarget.style.borderColor = '#9333ea';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#f9fafb';
+            e.currentTarget.style.borderColor = '#d1d5db';
+          }}
         >
-          {/* Abstract blobs */}
-          <div className="pointer-events-none">
-            <div className="absolute -top-16 -left-10 w-56 h-56 bg-sky-300/25 rounded-[50%] blur-3xl" />
-            <div className="absolute -bottom-24 left-10 w-64 h-64 bg-sky-400/25 rounded-[45%] blur-3xl" />
-            <div className="absolute -top-24 right-0 w-64 h-64 bg-blue-900/50 rounded-[55%] blur-3xl" />
-            <div className="absolute bottom-0 right-10 w-40 h-40 bg-blue-600/35 rounded-[45%] blur-2xl" />
-          </div>
-
-          {/* Small rounded shapes */}
-          <div className="pointer-events-none">
-            <div className="absolute top-16 left-16 w-20 h-7 rounded-full bg-sky-100/80" />
-            <div className="absolute top-32 left-32 w-16 h-6 rounded-full bg-sky-200/80" />
-            <div className="absolute bottom-16 right-24 w-24 h-8 rounded-full bg-sky-100/80" />
-          </div>
-
-          {/* Shadow card (no glass) */}
-          <div className="relative flex items-center justify-center py-14 px-4 sm:px-10">
-            <div
-              className="
-                w-full max-w-xl
-                bg-white
-                rounded-2xl
-                shadow-2xl
-                px-6 sm:px-8 py-7
-              "
-            >
-              <h3 className="text-base font-bold mb-4 text-gray-900">
-                {t("Create Post", language)}
-              </h3>
-
-              {/* Title */}
-              <input
-                type="text"
-                placeholder={t("Post title...", language)}
-                name="title"
-                className="
-                  w-full px-4 py-2.5 mb-3 text-sm
-                  bg-white border border-gray-200
-                  rounded-lg text-gray-900 placeholder-gray-500
-                  focus:outline-none focus:border-sky-500 focus:ring-2
-                  focus:ring-sky-200 transition-all
-                "
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-
-              {/* Text Content */}
-              <textarea
-                placeholder={t(
-                  "Write your news or information...",
-                  language
-                )}
-                className="
-                  w-full px-4 py-2.5 h-32 mb-3 text-sm
-                  bg-white border border-gray-200
-                  rounded-lg resize-none text-gray-900
-                  placeholder-gray-500
-                  focus:outline-none focus:border-sky-500 focus:ring-2
-                  focus:ring-sky-200 transition-all
-                "
-                name="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-
-              {/* Media Upload */}
-              <div className="mb-3">
-                <label
-                  className="
-                    flex items-center justify-center
-                    w-full p-4 border-2 border-dashed border-gray-300
-                    rounded-lg cursor-pointer
-                    bg-gray-50 hover:bg-sky-50
-                    hover:border-sky-400
-                    transition-all group
-                  "
-                >
-                  <input
-                    type="file"
-                    accept="image/,video/"
-                    onChange={handleMediaChange}
-                    className="hidden"
-                  />
-                  <span
-                    className="
-                      text-sm text-gray-700
-                      group-hover:text-sky-700 font-medium
-                    "
-                  >
-                    {t("Click to upload image or video", language)}
-                  </span>
-                </label>
-                <p className="text-xs text-gray-600 mt-1">
-                  {t("Max file size: 10MB", language)}
-                </p>
-              </div>
-
-              {/* Media Preview */}
-              {mediaPreview && (
-                <div className="mb-3 relative">
-                  <button
-                    onClick={removeMedia}
-                    className="
-                      absolute top-2 right-2 text-sm text-white
-                      bg-red-600 hover:bg-red-700
-                      rounded-lg px-3 py-1.5 z-10 font-medium
-                      shadow-md
-                    "
-                  >
-                    {t("Remove", language)}
-                  </button>
-                  {mediaType === "image" ? (
-                    <img
-                      src={mediaPreview}
-                      alt="Preview"
-                      className="
-                        w-full max-h-48 object-cover rounded-lg
-                        border border-gray-200 shadow-sm
-                      "
-                    />
-                  ) : (
-                    <video
-                      src={mediaPreview}
-                      controls
-                      className="
-                        w-full max-h-48 rounded-lg
-                        border border-gray-200 shadow-sm
-                      "
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Button */}
-              <button
-                onClick={handlePost}
-                className="
-                  w-full text-sm
-                  bg-gradient-to-r from-sky-500 to-blue-600
-                  text-white py-2.5 rounded-lg
-                  hover:from-sky-400 hover:to-blue-700
-                  transition-all font-semibold shadow-md hover:shadow-lg
-                "
-              >
-                {t("Post", language)}
-              </button>
-            </div>
-          </div>
-        </div>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleMediaChange}
+            style={{ display: 'none' }}
+          />
+          <span
+            style={{
+              fontSize: '14px',
+              color: '#374151',
+              fontWeight: '500'
+            }}
+          >
+            {t("Click to upload image or video", language)}
+          </span>
+        </label>
+        <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+          {t("Max file size: 10MB", language)}
+        </p>
       </div>
+
+      {/* Media Preview */}
+      {mediaPreview && (
+        <div style={{ marginBottom: '16px', position: 'relative' }}>
+          <button
+            onClick={removeMedia}
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              fontSize: '13px',
+              color: 'white',
+              backgroundColor: '#dc2626',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              zIndex: 10,
+              fontWeight: '600',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
+          >
+            {t("Remove", language)}
+          </button>
+          {mediaType === "image" ? (
+            <img
+              src={mediaPreview}
+              alt="Preview"
+              style={{
+                width: '100%',
+                maxHeight: '192px',
+                objectFit: 'cover',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}
+            />
+          ) : (
+            <video
+              src={mediaPreview}
+              controls
+              style={{
+                width: '100%',
+                maxHeight: '192px',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Button */}
+      <button
+        onClick={handlePost}
+        style={{
+          width: '100%',
+          fontSize: '14px',
+          backgroundColor: '#9333ea',
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          border: 'none',
+          fontWeight: '600',
+          cursor: 'pointer',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = '#7e22ce';
+          e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = '#9333ea';
+          e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+        }}
+      >
+        {t("Post", language)}
+      </button>
 
       <ToastContainer />
     </div>

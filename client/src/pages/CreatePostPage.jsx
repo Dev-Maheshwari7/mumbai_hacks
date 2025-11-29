@@ -36,17 +36,26 @@ export default function CreatePostPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 flex flex-col">
+    <div style={{ marginLeft: '288px', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       <Navbar user={user} onLogout={handleLogout} />
-      <div className="w-full max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-6">
-
-        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('Create Post', language)}</h1>
+      <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ 
+          backgroundColor: 'white', 
+          borderRadius: '16px', 
+          padding: '32px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid #e5e7eb'
+        }}>
+          <h1 style={{ 
+            fontSize: '24px', 
+            fontWeight: '700', 
+            color: '#1f2937', 
+            marginBottom: '24px',
+            letterSpacing: '-0.3px'
+          }}>{t('Create Post', language)}</h1>
           <CreatePost />
         </div>
       </div>
-    </div>
     </div>
   );
 }

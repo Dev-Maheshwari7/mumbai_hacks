@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
+// Add keyframe animation for spinner
+const spinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
 export default function Aiagent() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
@@ -86,205 +94,135 @@ export default function Aiagent() {
   };
 
   return (
-    <div style={styles.page}>
-      <Navbar user={user} onLogout={handleLogout} />
-<<<<<<< Updated upstream
-      <div className="max-w-5xl mx-auto w-full px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">AI Fact Checker Agent</h1>
-=======
+    <>
+      <style>{spinnerStyles}</style>
+      <div style={styles.page}>
+        <Navbar user={user} onLogout={handleLogout} />
       <div style={styles.container}>
-        {/* Background card like template */}
-        <div style={styles.backgroundCard}>
-          {/* Blobby shapes */}
-          <div style={{ ...styles.blob, ...styles.blob1 }} />
-          <div style={{ ...styles.blob, ...styles.blob2 }} />
-          <div style={{ ...styles.blob, ...styles.blob3 }} />
-          <div style={{ ...styles.blob, ...styles.blob4 }} />
->>>>>>> Stashed changes
+        <div style={styles.header}>
+          <h1 style={styles.title}>Link Fact Checker</h1>
+          <p style={styles.subtitle}>Verify claims from any URL with AI-powered analysis</p>
+        </div>
 
-          {/* Small pills / waves */}
-          <div style={{ ...styles.pill, ...styles.pill1 }} />
-          <div style={{ ...styles.pill, ...styles.pill2 }} />
-          <div style={{ ...styles.pill, ...styles.pill3 }} />
-
-          {/* Center card with checker (no backend or inputs changed) */}
-          <div style={styles.centerCard}>
-            <h1 style={styles.title}>AI Fact Checker</h1>
-            <p style={styles.subtitle}>Paste a URL to verify claims with AI</p>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Enter URL</label>
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://x.com/... or https://example.com/..."
-                style={styles.input}
-              />
+        <div style={styles.mainCard}>
+          <div style={styles.inputSection}>
+            <div style={styles.iconWrapper}>
+              <svg style={styles.icon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
             </div>
 
-<<<<<<< Updated upstream
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com/article or https://x.com/post..."
+              style={styles.input}
+              onKeyPress={(e) => e.key === 'Enter' && !loading && handleSubmit()}
+            />
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={loading ? styles.buttonDisabled : styles.button}
+            >
+              {loading ? (
+                <span style={styles.buttonContent}>
+                  <span style={styles.spinner}></span>
+                  Analyzing...
+                </span>
+              ) : (
+                <span style={styles.buttonContent}>
+                  <svg style={styles.buttonIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Verify Facts
+                </span>
+              )}
+            </button>
+          </div>
+
+          {error && (
+            <div style={styles.errorBox}>
+              <p style={styles.errorText}>{error}</p>
+            </div>
+          )}
+
           {results && (
-            <div className="mt-8 space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Fact-Check Results</h2>
+            <div style={styles.resultsContainer}>
+              {results.extracted_content && (
+                <div style={styles.resultCard}>
+                  <div style={styles.cardHeader}>
+                    <h3 style={styles.cardTitle}>Extracted Content</h3>
+                  </div>
+                  <div style={styles.contentBox}>
+                    {results.extracted_content}
+                  </div>
+                </div>
+              )}
 
-              {results.results && results.results.length > 0 ? (
-                <div className="space-y-4">
+              {results.results && results.results.length > 0 && (
+                <div style={styles.resultCard}>
+                  <div style={styles.cardHeader}>
+                    <h3 style={styles.cardTitle}>Fact-Check Analysis</h3>
+                  </div>
                   {results.results.map((result, index) => (
-                    <div key={index} className={`p-6 rounded-lg ${getVerdictColor(result.verdict)}`}>
-                      {/* Claim */}
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-600 mb-1"><strong>Claim:</strong></p>
-                        <p className="text-gray-800 text-base">{result.claim}</p>
+                    <div key={index} style={styles.analysisItem}>
+                      <div style={styles.statementBadge}>Statement {index + 1}</div>
+                      <div style={styles.statementText}>
+                        <strong style={styles.statementLabel}>Claim:</strong>
+                        <p style={styles.statementContent}>{result.text}</p>
                       </div>
 
-                      {/* Verdict and Confidence */}
-                      <div className="flex gap-4 mb-4 flex-wrap">
-                        <div>
-                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getVerdictBadge(result.verdict)}`}>
-                            {result.verdict}
-                          </span>
-                        </div>
-                        <div>
-                          <span className={`inline-block text-sm font-semibold ${getConfidenceColor(result.confidence)}`}>
-                            Confidence: {result.confidence}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Sources */}
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-gray-700 mb-1">Sources:</p>
-                        <p className="text-sm text-gray-600 bg-white bg-opacity-50 px-3 py-2 rounded">
-                          {result.sources || 'None'}
-                        </p>
-                      </div>
-
-                      {/* Search Results Preview */}
-                      {result.search_results && result.search_results.length > 0 && (
-                        <div className="mb-4">
-                          <p className="text-sm font-semibold text-gray-700 mb-3">Supporting Evidence:</p>
-                          <div className="space-y-3">
-                            {result.search_results.map((sr) => (
-                              <div key={sr.id} className="bg-white bg-opacity-70 p-4 rounded border border-gray-200">
-                                <div className="flex items-start gap-3">
-                                  <span className="font-bold text-indigo-700 text-lg min-w-fit">[{sr.id}]</span>
-                                  <div className="flex-1">
-                                    <p className="font-semibold text-gray-800 text-sm mb-2">{sr.title}</p>
-                                    <p className="text-gray-700 text-sm mb-2">{sr.snippet}</p>
-                                    {sr.link && (
-                                      <a 
-                                        href={sr.link} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-indigo-600 hover:text-indigo-800 text-xs break-all"
-                                      >
-                                        🔗 {sr.link}
+                      {result.search_results && (
+                        <div style={styles.evidenceSection}>
+                          <div style={styles.evidenceHeader}>
+                            <strong>Search Evidence</strong>
+                          </div>
+                          <div style={styles.searchBox}>
+                            {typeof result.search_results === 'string' 
+                              ? result.search_results 
+                              : Array.isArray(result.search_results)
+                                ? result.search_results.map((item, idx) => (
+                                    <div key={idx} style={styles.searchResult}>
+                                      <div style={styles.searchTitle}>{item.title}</div>
+                                      <div style={styles.searchSnippet}>{item.snippet}</div>
+                                      <a href={item.link} target="_blank" rel="noopener noreferrer" 
+                                         style={styles.searchLink}>
+                                        View Source →
                                       </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                                    </div>
+                                  ))
+                                : JSON.stringify(result.search_results)
+                            }
                           </div>
                         </div>
                       )}
 
-                      {/* Full Analysis */}
-                      <details className="mt-4">
-                        <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
-                          View Full Analysis
-                        </summary>
-                        <div className="mt-3 text-sm text-gray-700 bg-white bg-opacity-50 p-3 rounded whitespace-pre-wrap">
-                          {result.analysis}
+                      {result.analysis && (
+                        <div style={styles.aiSection}>
+                          <div style={styles.aiHeader}>
+                            <strong>AI Analysis</strong>
+                          </div>
+                          <div style={styles.analysisBox}>{result.analysis}</div>
                         </div>
-                      </details>
+                      )}
                     </div>
                   ))}
-                </div>
-              ) : (
-                <div className="text-gray-500">
-                  <p>No results available</p>
                 </div>
               )}
 
               {results.error && (
-                <div className="text-red-600 bg-red-50 p-4 rounded-lg">
-                  <p>Error: {results.error}</p>
+                <div style={styles.errorBox}>
+                  <p style={styles.errorText}>Error: {results.error}</p>
                 </div>
               )}
             </div>
           )}
-=======
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              style={{
-                ...styles.button,
-                ...(loading ? styles.buttonDisabled : {})
-              }}
-            >
-              {loading ? 'Analyzing...' : 'Check Fact'}
-            </button>
-
-            {error && (
-              <div style={styles.errorBox}>
-                <p style={styles.errorText}>{error}</p>
-              </div>
-            )}
-
-            {results && (
-              <div style={styles.resultsContainer}>
-                {results.extracted_content && (
-                  <div style={styles.section}>
-                    <h3 style={styles.sectionTitle}>Extracted Content</h3>
-                    <div style={styles.contentBox}>
-                      {results.extracted_content}
-                    </div>
-                  </div>
-                )}
-
-                {results.results && results.results.length > 0 && (
-                  <div style={styles.section}>
-                    <h3 style={styles.sectionTitle}>Fact-Check Analysis</h3>
-                    {results.results.map((result, index) => (
-                      <div key={index} style={styles.resultItem}>
-                        <h4 style={styles.resultHeader}>Statement {index + 1}</h4>
-                        <div style={styles.resultText}>
-                          <strong>Text:</strong> {result.text}
-                        </div>
-
-                        {result.search_results && (
-                          <div style={styles.resultSection}>
-                            <strong>Search Results:</strong>
-                            <div style={styles.searchBox}>{result.search_results}</div>
-                          </div>
-                        )}
-
-                        {result.analysis && (
-                          <div style={styles.resultSection}>
-                            <strong>AI Analysis:</strong>
-                            <div style={styles.analysisBox}>{result.analysis}</div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {results.error && (
-                  <div style={styles.section}>
-                    <p style={styles.errorText}>Error: {results.error}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
->>>>>>> Stashed changes
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -293,211 +231,254 @@ const styles = {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #0ea5e9 100%)',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    background: '#f9fafb',
+    fontFamily: "'Inter', 'Segoe UI', sans-serif",
   },
   container: {
     flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'right',
-    padding: '24px',
+    marginLeft: '288px',
+    padding: '40px',
   },
-  backgroundCard: {
-    position: 'relative',
-    width: '100%',
-    maxWidth: '1100px',
-    aspectRatio: '16 / 7',
-    background: 'radial-gradient(circle at top left, #38bdf8 0%, #1d4ed8 45%, #0f172a 100%)',
-    borderRadius: '32px',
-    overflow: 'hidden',
-    boxShadow: '0 30px 80px rgba(15, 23, 42, 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blob: {
-    position: 'absolute',
-    background: 'rgba(15, 23, 42, 0.18)',
-    borderRadius: '40% 60% 60% 40%',
-    filter: 'blur(2px)',
-  },
-  blob1: {
-    width: '260px',
-    height: '260px',
-    top: '-40px',
-    left: '-60px',
-  },
-  blob2: {
-    width: '220px',
-    height: '220px',
-    bottom: '-60px',
-    left: '40px',
-  },
-  blob3: {
-    width: '260px',
-    height: '260px',
-    top: '-80px',
-    right: '-40px',
-  },
-  blob4: {
-    width: '220px',
-    height: '220px',
-    bottom: '-40px',
-    right: '60px',
-  },
-  pill: {
-    position: 'absolute',
-    borderRadius: '999px',
-    background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
-  },
-  pill1: {
-    width: '90px',
-    height: '28px',
-    top: '20%',
-    left: '25%',
-  },
-  pill2: {
-    width: '70px',
-    height: '24px',
-    top: '65%',
-    left: '18%',
-  },
-  pill3: {
-    width: '110px',
-    height: '30px',
-    bottom: '18%',
-    right: '22%',
-  },
-  centerCard: {
-    position: 'relative',
-    zIndex: 5,
-    width: '100%',
-    maxWidth: '520px',
-    padding: '32px 36px',
-    borderRadius: '24px',
-    background: 'transparent',
-    backdropFilter: 'blur(5px)',
-    border: '1px solid rgba(148, 163, 184, 0.4)',
-    boxShadow: '0 20px 60px rgba(15, 23, 42, 0.7)',
-    color: 'white',
+  header: {
+    marginBottom: '32px',
   },
   title: {
     fontSize: '28px',
-    fontWeight: 700,
-    marginBottom: '6px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '8px',
+    letterSpacing: '-0.5px',
   },
   subtitle: {
-    fontSize: '14px',
-    color: '#e5e7eb',
+    fontSize: '15px',
+    color: '#6b7280',
+    fontWeight: '400',
+  },
+  mainCard: {
+    backgroundColor: 'white',
+    borderRadius: '16px',
+    padding: '32px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    border: '1px solid #e5e7eb',
+  },
+  inputSection: {
     marginBottom: '24px',
   },
-  formGroup: {
+  iconWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    background: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
     marginBottom: '20px',
   },
-  label: {
-    display: 'block',
-    fontSize: '14px',
-    marginBottom: '8px',
-    color: '#cbd5f5',
+  icon: {
+    width: '24px',
+    height: '24px',
+    color: 'white',
   },
   input: {
     width: '100%',
-    padding: '12px 14px',
+    padding: '14px 16px',
     borderRadius: '10px',
-    border: '1px solid #1d4ed8',
-    background: 'rgba(15,23,42,0.9)',
-    color: '#e5e7eb',
+    border: '1px solid #d1d5db',
     fontSize: '14px',
+    color: '#1f2937',
+    backgroundColor: 'white',
+    transition: 'all 0.2s ease',
     outline: 'none',
+    marginBottom: '16px',
+    fontFamily: 'inherit',
   },
   button: {
     width: '100%',
-    padding: '12px',
+    padding: '14px 20px',
+    fontSize: '15px',
+    fontWeight: '600',
     borderRadius: '10px',
     border: 'none',
-    background: 'linear-gradient(90deg, #38bdf8, #1d4ed8)',
-    color: 'white',
-    fontWeight: 600,
-    fontSize: '15px',
     cursor: 'pointer',
-    marginBottom: '20px',
+    background: '#9333ea',
+    color: 'white',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    letterSpacing: '0.3px',
   },
   buttonDisabled: {
-    opacity: 0.6,
+    width: '100%',
+    padding: '14px 20px',
+    fontSize: '15px',
+    fontWeight: '600',
+    borderRadius: '10px',
+    border: 'none',
     cursor: 'not-allowed',
+    background: '#d1d5db',
+    color: 'white',
+    boxShadow: 'none',
+  },
+  buttonContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+  },
+  buttonIcon: {
+    width: '20px',
+    height: '20px',
+  },
+  spinner: {
+    width: '16px',
+    height: '16px',
+    border: '2px solid rgba(255,255,255,0.3)',
+    borderTop: '2px solid white',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+    display: 'inline-block',
   },
   errorBox: {
-    marginBottom: '16px',
-    padding: '10px 12px',
+    marginTop: '16px',
+    padding: '14px 16px',
     borderRadius: '10px',
-    background: 'rgba(248, 113, 113, 0.15)',
-    border: '1px solid rgba(248, 113, 113, 0.5)',
+    background: '#fef2f2',
+    border: '1px solid #fecaca',
   },
   errorText: {
     margin: 0,
-    fontSize: '13px',
-    color: '#fecaca',
+    fontSize: '14px',
+    color: '#dc2626',
+    fontWeight: '500',
   },
   resultsContainer: {
-    marginTop: '8px',
-    paddingTop: '8px',
-    borderTop: '1px solid rgba(148, 163, 184, 0.5)',
-    maxHeight: '260px',
-    overflowY: 'auto',
+    marginTop: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
   },
-  section: {
-    marginBottom: '18px',
+  resultCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+    padding: '24px',
+    border: '1px solid #e5e7eb',
   },
-  sectionTitle: {
-    fontSize: '15px',
-    fontWeight: 600,
-    marginBottom: '8px',
-    color: '#e5e7eb',
+  cardHeader: {
+    marginBottom: '20px',
+    paddingBottom: '16px',
+    borderBottom: '2px solid #e5e7eb',
+  },
+  cardTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#1f2937',
+    margin: 0,
+    letterSpacing: '-0.3px',
   },
   contentBox: {
-    background: 'rgba(15, 23, 42, 0.9)',
+    background: 'white',
     borderRadius: '10px',
-    padding: '10px 12px',
-    fontSize: '13px',
-    lineHeight: 1.5,
-    border: '1px solid rgba(148, 163, 184, 0.5)',
-    whiteSpace: 'pre-wrap',
-  },
-  resultItem: {
-    marginBottom: '14px',
-    padding: '10px 12px',
-    borderRadius: '10px',
-    background: 'rgba(15, 23, 42, 0.9)',
-    border: '1px solid rgba(96, 165, 250, 0.6)',
-  },
-  resultHeader: {
+    padding: '16px',
     fontSize: '14px',
-    fontWeight: 600,
-    marginBottom: '6px',
+    lineHeight: '1.6',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    whiteSpace: 'pre-wrap',
+    fontWeight: '400',
   },
-  resultText: {
+  analysisItem: {
+    marginBottom: '20px',
+    padding: '20px',
+    borderRadius: '12px',
+    background: 'white',
+    border: '1px solid #e5e7eb',
+  },
+  statementBadge: {
+    display: 'inline-block',
+    backgroundColor: '#9333ea',
+    borderRadius: '6px',
+    padding: '6px 12px',
+    marginBottom: '16px',
+    fontWeight: '600',
     fontSize: '13px',
-    color: '#e5e7eb',
-    marginBottom: '6px',
+    color: 'white',
   },
-  resultSection: {
-    marginTop: '4px',
+  statementText: {
+    marginBottom: '16px',
+  },
+  statementLabel: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  statementContent: {
+    fontSize: '14px',
+    lineHeight: '1.6',
+    color: '#1f2937',
+    marginTop: '8px',
+    fontWeight: '500',
+  },
+  evidenceSection: {
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid #e5e7eb',
+  },
+  evidenceHeader: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '12px',
   },
   searchBox: {
-    marginTop: '4px',
-    padding: '8px',
+    padding: '0',
+  },
+  searchResult: {
+    marginBottom: '16px',
+    padding: '14px',
     borderRadius: '8px',
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
+  },
+  searchTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: '6px',
+  },
+  searchSnippet: {
+    fontSize: '13px',
+    color: '#6b7280',
+    lineHeight: '1.5',
+    marginBottom: '8px',
+  },
+  searchLink: {
     fontSize: '12px',
-    background: 'rgba(15, 23, 42, 0.95)',
-    border: '1px solid rgba(56, 189, 248, 0.6)',
+    color: '#9333ea',
+    textDecoration: 'none',
+    fontWeight: '600',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  aiSection: {
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid #e5e7eb',
+  },
+  aiHeader: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '12px',
   },
   analysisBox: {
-    marginTop: '4px',
-    padding: '8px',
+    padding: '14px',
     borderRadius: '8px',
-    fontSize: '12px',
-    background: 'rgba(15, 23, 42, 0.95)',
-    border: '1px solid rgba(129, 140, 248, 0.7)',
+    fontSize: '14px',
+    background: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    color: '#166534',
+    lineHeight: '1.6',
   },
 };

@@ -94,20 +94,26 @@ def scrape_twitter_content(url):
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
-    from selenium.common.exceptions import TimeoutException
+    from selenium.common.exceptions import TimeoutException, WebDriverException
     from webdriver_manager.chrome import ChromeDriverManager
     
     try:
-        # Setup Chrome options
+        # Setup Chrome options with additional stability flags
         chrome_options = Options()
-        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--headless=new')  # Updated headless mode
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-software-rasterizer')
+        chrome_options.add_argument('--disable-extensions')
+        chrome_options.add_argument('--disable-logging')
+        chrome_options.add_argument('--log-level=3')
         chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        chrome_options.add_argument('--remote-debugging-port=9222')
+        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
+        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
         
-        # Initialize driver with webdriver-manager
+        # Initialize driver with webdriver-manager (auto-detects correct version)
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get(url)
@@ -149,6 +155,8 @@ def scrape_twitter_content(url):
             driver.quit()
             return "Timeout while loading tweet. The tweet may be protected or deleted."
             
+    except WebDriverException as e:
+        return f"Chrome WebDriver error: Please restart the backend server. Error: {str(e)}"
     except Exception as e:
         return f"Error scraping Twitter/X: {str(e)}"
 
@@ -686,7 +694,6 @@ def internal_error(error):
     return jsonify({'message': 'Internal server error'}), 500
 
 from tested2 import GEMINI_API_KEY, check_truthfulness
-from tested2 import GEMINI_API_KEY, check_truthfulness
 
 @app.route('/fact-check', methods=['POST'])
 def fact_check():
@@ -791,6 +798,36 @@ def translate_text():
         return jsonify({'message': f'Translation failed: {str(e)}'}), 500
 
 
+@app.route('/api/auth/suggestedUsers', methods=['POST'])
+@jwt_required()
+def get_suggested_users():
+    """Get suggested users to follow"""
+    try:
+        data = request.get_json()
+        user_email = data.get('email')
+        
+        if not user_email:
+            return jsonify({'message': 'Email is required'}), 400
+        
+        # Find current user
+        current_user = users_collection.find_one({'email': user_email})
+        
+        if not current_user:
+            return jsonify({'message': 'User not found'}), 404
+        
+        following = current_user.get('following', [])
+        
+        # Find users that current user is not following (excluding self)
+        suggested = list(users_collection.find({
+            'email': {'$ne': user_email, '$nin': following}
+        }, {'_id': 0, 'username': 1, 'email': 1}).limit(5))
+        
+        return jsonify({'suggested': suggested}), 200
+        
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
 @app.route('/trending-misinformation', methods=['POST'])
 def trending_misinformation():
     data = request.json
@@ -849,14 +886,6 @@ def trending_misinformation():
 
 @app.route('/conversational-fact-check', methods=['POST'])
 def conversational_fact_check():
-    import requests
-    import json
-    import re
-    from dotenv import load_dotenv
-    load_dotenv()
-
-    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
-
     import json
     import re
     
@@ -1175,14 +1204,13 @@ If a URL is shared but you can't access the content (like X/Twitter posts that n
         ai_response = response.text
         
         return jsonify({
-            "response": parsed,
-            "search_evidence": live_summary,
+            "response": ai_response,
             "status": "success",
             'search_performed': bool(search_results_text)
         })
 
     except Exception as e:
-        print(f"Error in conversational_fact_check: {str(e)}")
+        print(f"Error in conversational_fact_check_legacy: {str(e)}")
         return jsonify({
             "response": {
                 "agent_response": f"An error occurred: {str(e)}",
@@ -1300,144 +1328,6 @@ def analyze_video():
             'analysis': analysis
         }), 200
     
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        traceback.print_exc()
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
-
-from PIL import Image
-import traceback
-@app.route('/api/analyze-image', methods=['POST'])
-def analyze_image():
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-    print(f"\n🔧 Configuration:")
-    print(f"   GEMINI_API_KEY: {'✓ Set' if GEMINI_API_KEY else '✗ NOT SET'}")
-
-# Initialize Gemini
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        print("   ✓ Gemini API configured\n")
-    else:
-        model = None
-        print("   ✗ GEMINI_API_KEY not found in .env\n")
-
-        print("📨 POST /api/analyze-image")
-        
-    try:
-        if 'image' not in request.files:
-            print("✗ No image in request")
-            return jsonify({'error': 'No image provided'}), 400
-
-        file = request.files['image']
-        print(f"✓ File received: {file.filename}")
-
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-
-        # Validate image
-        try:
-            print("  → Validating image...")
-            img = Image.open(file.stream)
-            img.verify()
-            file.stream.seek(0)
-            img = Image.open(file.stream)
-            print(f"  ✓ Image valid: {img.format} {img.size}")
-        except Exception as e:
-            print(f"  ✗ Image validation failed: {e}")
-            return jsonify({'error': f'Invalid image: {str(e)}'}), 400
-
-        # Send to Gemini
-        if not model:
-            print("✗ Gemini model not configured")
-            return jsonify({'error': 'Gemini API not configured'}), 500
-
-        try:
-            print("  → Sending to Gemini API...")
-            file.stream.seek(0)
-            response = model.generate_content([
-                "Analyze this image in short. give confidence score talling the image is ai generated or not",
-                img
-            ])
-            analysis = response.text
-            print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
-
-            return jsonify({
-                'success': True,
-                'analysis': analysis
-            }), 200
-
-        except Exception as e:
-            print(f"  ✗ Gemini error: {e}")
-            traceback.print_exc()
-            return jsonify({'error': f'Gemini error: {str(e)}'}), 500
-
-    except Exception as e:
-        print(f"✗ Unexpected error: {e}")
-        traceback.print_exc()
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
-
-from pathlib import Path
-@app.route('/api/analyze-video', methods=['POST'])
-def analyze_video():
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-# Supported video formats
-    SUPPORTED_FORMATS = {'video/mp4', 'video/mpeg', 'video/webm', 'video/x-msvideo', 'video/quicktime'}
-    MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB limit for direct upload
-
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        print("✓ Gemini API configured")
-    try:
-        if 'video' not in request.files:
-            return jsonify({'error': 'No video provided'}), 400
-        
-        file = request.files['video']
-        
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Check file size
-        file.seek(0, os.SEEK_END)
-        file_size = file.tell()
-        file.seek(0)
-        
-        if file_size > MAX_FILE_SIZE:
-            return jsonify({'error': f'File too large. Maximum size is 20MB, got {file_size / 1024 / 1024:.2f}MB'}), 400
-        
-        # Check MIME type
-        if file.content_type not in SUPPORTED_FORMATS:
-            return jsonify({'error': f'Unsupported video format. Supported: {", ".join(SUPPORTED_FORMATS)}'}), 400
-        
-        print(f"✓ File received: {file.filename} ({file_size / 1024 / 1024:.2f}MB)")
-        
-        if not model:
-            return jsonify({'error': 'Gemini API not configured'}), 500
-        
-        # Read video bytes
-        video_bytes = file.read()
-        print("  → Sending to Gemini API...")
-        
-        # Use the correct MIME type
-        response = model.generate_content([
-            "Analyze this video and determine if it's AI-generated or real. Respond with:\n1. A clear verdict (is it AI-generated or real?)\n2. Confidence score as a percentage\n3. Key indicators you observed\n\nUse plain text only, no markdown formatting.",
-            {
-                'mime_type': file.content_type,
-                'data': video_bytes
-            }
-        ])
-        
-        analysis = response.text
-        print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
-        
-        return jsonify({
-            'success': True,
-            'analysis': analysis
-        }), 200
-        
     except Exception as e:
         print(f"✗ Error: {e}")
         traceback.print_exc()

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Volume2, Copy, Check } from 'lucide-react';
-import { Send, Mic, Volume2, Copy, Check } from 'lucide-react';
 
 export default function FactChecker() {
   const [messages, setMessages] = useState([
@@ -144,7 +143,7 @@ export default function FactChecker() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col ml-72">
       {/* Header */}
       <div className="bg-white bg-opacity-60 backdrop-blur-md border-b border-white border-opacity-40 px-6 py-6 shadow-sm">
         <div className="max-w-4xl mx-auto">

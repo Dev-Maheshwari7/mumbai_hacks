@@ -8,7 +8,6 @@ export default function Trending() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
 
-
   const topics = [
     'Finance',
     'Healthcare',
@@ -68,109 +67,346 @@ export default function Trending() {
     }
   };
 
-  const gradientButton = {
-    background: 'linear-gradient(90deg, #ff6b6b, #f06595)',
-    border: 'none',
-    borderRadius: '12px',
-    color: 'white',
-    padding: '14px 20px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: loading ? 'not-allowed' : 'pointer',
-    boxShadow: '0 8px 20px rgba(255,107,107,0.4)',
-    transition: 'transform 0.2s ease-in-out',
-  };
   return (
-    <div style={{ padding: '50px', maxWidth: '700px', margin: '0 auto', fontFamily: 'Helvetica, Arial, sans-serif', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
-      <motion.h1
-        style={{ fontSize: '34px', fontWeight: '600', textAlign: 'center', marginBottom: '40px', color: '#222' }}
+    <div style={{ 
+      marginLeft: '288px',
+      padding: '40px',
+      minHeight: '100vh',
+      backgroundColor: '#f9fafb',
+      fontFamily: "'Inter', 'Segoe UI', sans-serif"
+    }}>
+      <motion.div
+        style={{ marginBottom: '32px' }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        Trending Misinformation
-      </motion.h1>
+        <h1 style={{ 
+          fontSize: '28px', 
+          fontWeight: '700', 
+          color: '#1f2937',
+          marginBottom: '8px',
+          letterSpacing: '-0.5px'
+        }}>
+          Trending Misinformation
+        </h1>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#6b7280',
+          fontWeight: '400'
+        }}>
+          Discover what's spreading misinformation across different topics and regions
+        </p>
+      </motion.div>
 
-
-      <motion.div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '30px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)', marginBottom: '30px' }}
-        initial={{ opacity: 0, y: 10 }}
+      <motion.div 
+        style={{ 
+          backgroundColor: 'white', 
+          borderRadius: '16px', 
+          padding: '32px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          marginBottom: '24px',
+          border: '1px solid #e5e7eb'
+        }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
           <div>
-            <label style={{ fontWeight: '500', marginBottom: '5px', display: 'block', fontSize: '15px', color: '#555' }}>Select Topic</label>
+            <label style={{ 
+              fontWeight: '600', 
+              marginBottom: '8px', 
+              display: 'block', 
+              fontSize: '13px', 
+              color: '#374151',
+              letterSpacing: '0.3px'
+            }}>
+              Select Topic
+            </label>
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', color: '#333' }}
+              style={{ 
+                width: '100%', 
+                padding: '10px 12px', 
+                borderRadius: '8px', 
+                border: '1px solid #d1d5db', 
+                fontSize: '14px', 
+                color: '#1f2937',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                outline: 'none',
+                fontWeight: '500'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#9333ea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(147, 51, 234, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
             >
               <option value="">-- Choose a topic --</option>
-              {topics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
+              {topics.map((topic) => (
+                <option key={topic} value={topic}>
+                  {topic}
+                </option>
+              ))}
             </select>
           </div>
 
-
           <div>
-            <label style={{ fontWeight: '500', marginBottom: '5px', display: 'block', fontSize: '15px', color: '#555' }}>Select City or Country</label>
+            <label style={{ 
+              fontWeight: '600', 
+              marginBottom: '8px', 
+              display: 'block', 
+              fontSize: '13px', 
+              color: '#374151',
+              letterSpacing: '0.3px'
+            }}>
+              Select Location
+            </label>
             <select
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', color: '#333' }}
+              style={{ 
+                width: '100%', 
+                padding: '10px 12px', 
+                borderRadius: '8px', 
+                border: '1px solid #d1d5db', 
+                fontSize: '14px', 
+                color: '#1f2937',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                outline: 'none',
+                fontWeight: '500'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#9333ea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(147, 51, 234, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
             >
-              <option value="">-- Choose an area --</option>
-              {areas.map((area) => <option key={area} value={area}>{area}</option>)}
+              <option value="">-- Choose a location --</option>
+              {areas.map((area) => (
+                <option key={area} value={area}>{area}</option>
+              ))}
             </select>
           </div>
         </div>
 
-
-        <button
+        <motion.button
           onClick={handleSubmit}
           disabled={loading}
-          style={{ marginTop: '25px', width: '100%', padding: '12px', fontSize: '15px', fontWeight: '500', borderRadius: '10px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: '#222', color: 'white', transition: 'background-color 0.2s ease' }}
-          onMouseOver={e => e.currentTarget.style.backgroundColor = '#444'}
-          onMouseOut={e => e.currentTarget.style.backgroundColor = '#222'}
+          whileHover={{ scale: loading ? 1 : 1.02 }}
+          whileTap={{ scale: loading ? 1 : 0.98 }}
+          style={{ 
+            marginTop: '8px', 
+            width: '100%', 
+            padding: '12px 20px', 
+            fontSize: '14px', 
+            fontWeight: '600', 
+            borderRadius: '8px', 
+            border: 'none', 
+            cursor: loading ? 'not-allowed' : 'pointer', 
+            background: loading ? '#d1d5db' : '#9333ea',
+            color: 'white', 
+            transition: 'all 0.2s ease',
+            boxShadow: loading ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+            letterSpacing: '0.3px'
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) e.target.style.background = '#7e22ce';
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) e.target.style.background = '#9333ea';
+          }}
         >
-          {loading ? 'Fetching...' : 'Get Trending Misinformation'}
-        </button>
-
+          {loading ? 'Fetching Data...' : 'Get Trending Misinformation'}
+        </motion.button>
 
         {error && (
-          <div style={{ color: 'red', marginTop: '20px', padding: '12px', borderRadius: '8px', backgroundColor: '#ffe5e5', border: '1px solid #f5c6cb' }}>
-            <p>{error}</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ 
+              color: '#dc2626', 
+              marginTop: '16px', 
+              padding: '12px 16px', 
+              borderRadius: '8px', 
+              backgroundColor: '#fef2f2', 
+              border: '1px solid #fecaca',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            {error}
+          </motion.div>
         )}
       </motion.div>
 
-
       {results && (
-        <motion.div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '25px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <motion.div 
+          style={{ 
+            backgroundColor: 'white', 
+            borderRadius: '16px', 
+            padding: '32px', 
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          <h2 style={{ fontSize: '22px', fontWeight: '500', marginBottom: '20px', color: '#222' }}>
-            Top Misinformation in {selectedTopic} - {selectedArea}
-          </h2>
-
+          <div style={{ 
+            marginBottom: '24px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #e5e7eb'
+          }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#1f2937',
+              marginBottom: '6px',
+              letterSpacing: '-0.3px'
+            }}>
+              Top Misinformation
+            </h2>
+            <p style={{ 
+              fontSize: '13px', 
+              color: '#6b7280',
+              fontWeight: '500'
+            }}>
+              {selectedTopic} • {selectedArea}
+            </p>
+          </div>
 
           {results.misinformation && results.misinformation.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {results.misinformation.map((item, index) => (
-                <div key={index} style={{ borderLeft: '3px solid #222', paddingLeft: '12px', borderRadius: '6px', backgroundColor: '#fafafa', padding: '10px' }}>
-                  <h4 style={{ fontWeight: '500', marginBottom: '5px' }}>#{index + 1}</h4>
-                  <p><strong>Misinformation:</strong> {item.misinformation}</p>
-                  <p><strong>Source:</strong> {item.source}</p>
-                </div>
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ 
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                  style={{ 
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px', 
+                    padding: '20px',
+                    border: '1px solid #e5e7eb',
+                    position: 'relative',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '4px',
+                    height: '100%',
+                    backgroundColor: index % 3 === 0 ? '#9333ea' : index % 3 === 1 ? '#a855f7' : '#c084fc',
+                    borderTopLeftRadius: '12px',
+                    borderBottomLeftRadius: '12px'
+                  }}></div>
+                  
+                  <div style={{ 
+                    display: 'inline-block',
+                    backgroundColor: '#9333ea',
+                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    marginBottom: '12px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    color: 'white'
+                  }}>
+                    #{index + 1}
+                  </div>
+                  
+                  <div style={{ marginBottom: '12px' }}>
+                    <p style={{ 
+                      fontSize: '11px', 
+                      fontWeight: '600', 
+                      color: '#9ca3af',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '6px'
+                    }}>
+                      Misinformation Claim
+                    </p>
+                    <p style={{ 
+                      fontSize: '14px', 
+                      lineHeight: '1.6', 
+                      color: '#374151',
+                      fontWeight: '500',
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word'
+                    }}>
+                      {item.misinformation}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p style={{ 
+                      fontSize: '11px', 
+                      fontWeight: '600', 
+                      color: '#9ca3af',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '6px'
+                    }}>
+                      Source
+                    </p>
+                    <p style={{ 
+                      fontSize: '13px', 
+                      color: '#6b7280',
+                      fontWeight: '500',
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word'
+                    }}>
+                      {item.source}
+                    </p>
+                  </div>
+                </motion.div>
               ))}
             </div>
           ) : (
-            <p style={{ color: '#777' }}>No misinformation data received</p>
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px',
+              color: '#9ca3af',
+              fontSize: '14px'
+            }}>
+              <p style={{ fontWeight: '500' }}>No misinformation data available</p>
+            </div>
           )}
 
-
           {results.error && (
-            <div style={{ color: 'red', marginTop: '15px' }}>Error: {results.error}</div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{ 
+                color: '#dc2626', 
+                marginTop: '16px',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                fontWeight: '500',
+                fontSize: '14px'
+              }}
+            >
+              Error: {results.error}
+            </motion.div>
           )}
         </motion.div>
       )}

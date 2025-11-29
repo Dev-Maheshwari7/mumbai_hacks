@@ -61,13 +61,22 @@ const SuggestedUsersSidebar = () => {
   }, []);
 
   return (
-    <aside className="w-80 bg-white border-l border-gray-200 p-6 h-screen sticky top-0 overflow-y-auto shadow-sm hidden xl:block">
+    <aside className="w-80 bg-white border-l border-gray-200 p-6 h-screen sticky top-0 shadow-sm hidden xl:block" style={{ 
+      overflow: 'hidden',
+      scrollbarWidth: 'none', /* Firefox */
+      msOverflowStyle: 'none' /* IE and Edge */
+    }}>
+      <style jsx>{`
+        aside::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
+        }
+      `}</style>
 
       <h3 className="text-lg font-bold mb-4 text-gray-900">
         Suggested for you
       </h3>
 
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-hidden">
         {users.length === 0 ? (
           <p className="text-sm text-gray-500">No suggestions available</p>
         ) : (
