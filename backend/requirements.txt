@@ -1,0 +1,17 @@
+# transformers
+# langchain
+# langchain-huggingface
+Flask==2.3.2
+Flask-CORS==4.0.0
+Flask-JWT-Extended==4.4.4
+pymongo==4.4.1
+python-dotenv==1.0.0
+Werkzeug==2.3.6
+deep-translator
+beautifulsoup4==4.14.2
+selenium
+google-generativeai
+duckduckgo-search
+webdriver-manager
+twilio
+# httpx and httpcore versions will be managed by google-generativeai
