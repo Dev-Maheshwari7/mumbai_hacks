@@ -4,6 +4,8 @@ import torch
 from transformers import pipeline
 import re
 
+from backend.tested2 import scrape_content
+
 app = Flask(__name__)
 CORS(app)
 
