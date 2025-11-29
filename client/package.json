@@ -12,7 +12,11 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.57.0",
     "@tailwindcss/vite": "^4.1.17",
+<<<<<<< Updated upstream
     "axios": "^1.13.2",
+=======
+    "framer-motion": "^12.23.24",
+>>>>>>> Stashed changes
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

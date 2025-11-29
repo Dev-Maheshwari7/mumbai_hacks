@@ -45,6 +45,7 @@ import FollowingPage from "./pages/FollowingPage.jsx";
 import ProtectedProfile from "./pages/ProtectedProfile.jsx";
 import { ToastContainer,Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Navbar from "./components/Navbar.jsx";
 
 const App = () => {
   const [userName, setuserName] = useState("")
@@ -139,8 +140,9 @@ const App = () => {
             <Route
               path="/aiagent"
               element={
-                isSignedIn ? (
-                  <Aiagent />
+                isSignedIn ? (<>
+                <Navbar/>
+                  <Aiagent /></>
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -179,8 +181,9 @@ const App = () => {
             <Route
               path="/conversation"
               element={
-                isSignedIn ? (
-                  <Conversation />
+                isSignedIn ? (<>
+                <Navbar/>
+                  <Conversation /></>
                 ) : (
                   <Navigate to="/login" replace />
                 )

@@ -6,6 +6,8 @@ import { MdSaveAlt, MdDelete } from "react-icons/md";
 import { IoSaveOutline } from "react-icons/io5";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { AiOutlineCheckCircle, AiFillCheckCircle } from "react-icons/ai";
+import { FaRegFlag } from "react-icons/fa";
+import { FaFlag } from "react-icons/fa6";
 import { HiSparkles } from "react-icons/hi2";
 import { t } from '../translations/translations';
 import { LanguageContext } from '../context/context';
@@ -501,7 +503,7 @@ const Post = ({
                         : "text-red-500 hover:text-red-600"
                         }`}
                 >
-                    {clicked === "down" ? <BsFillHandThumbsDownFill /> : <BsHandThumbsDown />}
+                    {clicked === "down" ? <FaFlag /> : <FaRegFlag />}
                     <span className="text-sm">{formatNumber(downvotes)}</span>
                 </button>
 

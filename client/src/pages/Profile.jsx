@@ -79,13 +79,13 @@ export default function Profile({ onLogout }) {
     onLogout();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-xl">Loading profile...</p>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <p className="text-xl">Loading profile...</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="w-full min-h-screen bg-gray-100 flex flex-col">
