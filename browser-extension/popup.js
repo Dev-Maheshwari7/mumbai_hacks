@@ -113,8 +113,30 @@ async function sendMessageToBot(message) {
 
     const data = await response.json();
     
+    // Handle the response structure from backend
+    let botMessage = '';
+    if (data.response && typeof data.response === 'object') {
+      // New format with structured response
+      const verdict = data.response.verdict || 'NONE';
+      const confidence = data.response.confidence_score || 0;
+      const agentResponse = data.response.agent_response || '';
+      const evidence = data.response.evidence_summary || '';
+      
+      // Format the message
+      if (verdict !== 'NONE') {
+        botMessage = `${agentResponse}\n\nVerdict: ${verdict}\nConfidence: ${confidence}%\n\nEvidence:\n${evidence}`;
+      } else {
+        botMessage = agentResponse;
+      }
+    } else if (typeof data.response === 'string') {
+      // Fallback for string response
+      botMessage = data.response;
+    } else {
+      botMessage = 'No response from AI.';
+    }
+    
     // Add bot response to chat
-    addMessageToChat('ai', data.response);
+    addMessageToChat('ai', botMessage);
     
   } catch (error) {
     console.error('Error:', error);

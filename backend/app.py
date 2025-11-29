@@ -885,7 +885,27 @@ def conversational_fact_check():
                 break
     
     try:
-        # Perform Real-time Search using Serper
+        # Check if message contains URLs
+        urls = detect_urls(user_message)
+        scraped_content = ""
+        enhanced_message = user_message
+        
+        if urls:
+            # URL found - scrape the content
+            for url in urls:
+                content = scrape_url_content(url)
+                
+                # Check if scraping failed
+                if "JavaScript is not available" in content or "Something went wrong" in content or "Error scraping" in content:
+                    # Scraping failed, fall back to search
+                    pass
+                else:
+                    scraped_content += f"\n\n--- Content from {url} ---\n{content}\n"
+            
+            if scraped_content:
+                enhanced_message = f"{user_message}\n\nI've extracted the following content from the URL(s):{scraped_content}"
+        
+        # Perform Real-time Search using Serper (for additional context or if no URL)
         search_query = original_claim if is_follow_up and original_claim else user_message
         
         search_url = "https://google.serper.dev/search"
@@ -907,6 +927,10 @@ def conversational_fact_check():
                 result_snippets.append(f"{title}: {snippet}")
         
         live_summary = "\n".join(result_snippets) if result_snippets else "No reliable real-time data found."
+        
+        # Use enhanced message if we have scraped content
+        if scraped_content:
+            user_message = enhanced_message
         
         # System Prompt
         system_prompt = """
