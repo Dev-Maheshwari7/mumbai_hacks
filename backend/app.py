@@ -34,7 +34,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
 # Enable CORS
-CORS(app,upports_credentials=True)
+CORS(app, supports_credentials=True)
 
 # MongoDB Connection
 MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
@@ -350,12 +350,15 @@ def postsave():
         return jsonify({'message': str(e)}), 500
 
 
-# Post Fetching
-@app.route('/api/auth/getPosts', methods=['GET'])
+# Post Fetching - Optimized
+@app.route('/api/auth/getPosts', methods=['POST'])
 def get_posts():
     try:
+        data = request.get_json() or {}
+        user_email = data.get('userEmail')  # Optional: for following status
+        
         # Get ALL posts from MongoDB
-        cursor = post_collection.find({}, {'_id': 0})  # remove _id from output
+        cursor = post_collection.find({}, {'_id': 0})
 
         posts = []
         for doc in cursor:
@@ -377,8 +380,18 @@ def get_posts():
             if has_media:
                 print(f"Post {doc.get('post_id')} has media type: {doc.get('mediaType')}")
 
+        # Optionally include following status
+        following_list = []
+        if user_email:
+            user = users_collection.find_one({'email': user_email}, {"following": 1})
+            if user:
+                following_list = user.get("following", [])
+
         print(f"Returning {len(posts)} posts, {sum(1 for p in posts if p['media'])} with media")
-        return jsonify({"posts": posts}), 200
+        return jsonify({
+            "posts": posts,
+            "following": following_list
+        }), 200
 
     except Exception as e:
         return jsonify({"message": str(e)}), 500
@@ -670,7 +683,7 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'message': 'Internal server error'}), 500
 
-from tested import check_truthfulness
+from tested2 import GEMINI_API_KEY, check_truthfulness
 
 @app.route('/fact-check', methods=['POST'])
 def fact_check():
@@ -833,6 +846,220 @@ def trending_misinformation():
 
 @app.route('/conversational-fact-check', methods=['POST'])
 def conversational_fact_check():
+    import json
+    import re
+    
+    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+    
+    data = request.json
+    user_message = data.get('message')
+    conversation_history = data.get('conversation_history', [])
+    
+    # Detect if this is a follow-up/source request
+    follow_up_keywords = [
+        'source', 'evidence', 'fetch', 'show', 'provide', 'get', 'retrieve',
+        'what was', 'tell me more', 'expand', 'elaborate', 'clarify', 'explain',
+        'previous', 'earlier', 'before', 'last', 'prior', 'more details',
+        'can you', 'could you', 'would you', 'please share'
+    ]
+    user_message_lower = user_message.lower()
+    is_follow_up = any(keyword in user_message_lower for keyword in follow_up_keywords)
+    
+    # Extract the original claim from conversation if this is a follow-up
+    original_claim = None
+    if is_follow_up and len(conversation_history) > 0:
+        for msg in reversed(conversation_history):
+            if msg['role'] == 'user':
+                original_claim = msg['content']
+                break
+    
+    try:
+        # Perform Real-time Search using Serper
+        search_query = original_claim if is_follow_up and original_claim else user_message
+        
+        search_url = "https://google.serper.dev/search"
+        payload = {"q": search_query}
+        headers = {
+            "X-API-KEY": SERPER_API_KEY,
+            "Content-Type": "application/json"
+        }
+        
+        search_results = requests.post(search_url, json=payload, headers=headers).json()
+        
+        # Extract relevant text summary
+        result_snippets = []
+        
+        if "organic" in search_results:
+            for item in search_results["organic"][:5]:
+                snippet = item.get("snippet", "")
+                title = item.get("title", "")
+                result_snippets.append(f"{title}: {snippet}")
+        
+        live_summary = "\n".join(result_snippets) if result_snippets else "No reliable real-time data found."
+        
+        # System Prompt
+        system_prompt = """
+You are a conversational AI fact-checker assistant. You help users verify claims using real-time search evidence.
+
+IMPORTANT BEHAVIORS:
+- Be conversational and friendly, not robotic
+- Remember context from previous messages in the conversation
+- If user asks to "fetch sources", "show sources", "get sources", or similar, provide the search evidence in a readable format
+- If user is clarifying a previous claim, reference that context naturally
+- Only fact-check NEW claims or requests for information about previous claims
+- If the user's message is NOT asking you to fact-check something, respond naturally without forcing a verdict
+
+FACT-CHECKING PROTOCOL:
+When fact-checking a claim:
+1. Analyze the user's claim
+2. Compare with provided search evidence
+3. Determine verdict: TRUE (evidence strongly supports), FALSE (evidence contradicts), or UNVERIFIABLE (insufficient/conflicting)
+4. Provide confidence score (0-100)
+
+RESPONSE FORMAT:
+Return ONLY valid JSON with these fields:
+
+{
+ "agent_response": "<natural conversational response>",
+ "verdict": "TRUE | FALSE | UNVERIFIABLE | NONE",
+ "confidence_score": <0-100>,
+ "evidence_summary": "<relevant evidence or explanation>"
+}
+
+Use "NONE" as verdict for non-fact-checking conversational responses.
+Be concise, natural, and helpful. Return ONLY the JSON, no markdown code blocks.
+"""
+        
+        # Build Conversation for Gemini
+        past_msgs = ""
+        if conversation_history:
+            for msg in conversation_history:
+                role = msg['role'].upper()
+                content = msg['content']
+                if role == 'ASSISTANT':
+                    content = content.replace('✅ ', '').replace('❌ ', '').replace('⚠ ', '').replace('❓ ', '')
+                    lines = content.split('\n')
+                    content = '\n'.join([line for line in lines if not line.startswith('Confidence:') and not line.startswith('📋')])
+                past_msgs += f"{role}: {content}\n"
+        
+        final_prompt = f"""
+{system_prompt}
+
+CONVERSATION CONTEXT:
+{past_msgs if past_msgs else "This is the start of the conversation."}
+
+CURRENT USER MESSAGE:
+{user_message}
+
+CURRENT SEARCH EVIDENCE:
+{live_summary}
+
+IS_FOLLOW_UP: {is_follow_up}
+{f'ORIGINAL_CLAIM_BEING_REFERENCED: {original_claim}' if is_follow_up and original_claim else ''}
+
+INSTRUCTIONS:
+- Analyze the current user message in context of the conversation history
+- If they're asking for sources/evidence/more details about a PREVIOUS claim, provide those using the search evidence
+- If they're asking a follow-up question, answer conversationally using prior context
+- If they're making a NEW claim, fact-check it using the search evidence
+- When providing sources, be specific and reference them naturally in your response
+- Respond in the required JSON format only
+"""
+        
+        # Get Gemini Output
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(final_prompt)
+        
+        ai_raw = response.text.strip()
+        print(f"Raw AI response: {ai_raw[:500]}...")  # Debug log
+        
+        # Clean JSON output with improved parsing
+        parsed = None
+        try:
+            # Try to extract JSON from markdown code blocks first
+            json_match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', ai_raw)
+            if json_match:
+                json_str = json_match.group(1).strip()
+                print(f"Extracted from markdown: {json_str[:200]}...")
+            else:
+                # Try to find JSON object in the response
+                json_match = re.search(r'(\{[\s\S]*\})', ai_raw)
+                if json_match:
+                    json_str = json_match.group(1).strip()
+                    print(f"Extracted JSON object: {json_str[:200]}...")
+                else:
+                    json_str = ai_raw
+                    print("Using full response as JSON")
+            
+            parsed = json.loads(json_str)
+            print(f"Parsed successfully: {parsed}")
+            
+        except (json.JSONDecodeError, AttributeError) as e:
+            print(f"JSON parsing error: {e}")
+            print(f"Full raw response: {ai_raw}")
+            # Try to create a structured response from plain text
+            parsed = {
+                "agent_response": ai_raw,
+                "verdict": "NONE",
+                "confidence_score": 0,
+                "evidence_summary": live_summary
+            }
+        
+        # Ensure all required fields exist
+        if not isinstance(parsed, dict):
+            parsed = {
+                "agent_response": str(parsed),
+                "verdict": "NONE",
+                "confidence_score": 0,
+                "evidence_summary": live_summary
+            }
+        
+        # Ensure confidence_score is an integer
+        if "confidence_score" in parsed:
+            if isinstance(parsed["confidence_score"], str):
+                try:
+                    # Extract number from string (e.g., "85%" -> 85)
+                    score_str = re.search(r'\d+', str(parsed["confidence_score"]))
+                    if score_str:
+                        parsed["confidence_score"] = int(score_str.group())
+                    else:
+                        parsed["confidence_score"] = 0
+                except (ValueError, TypeError):
+                    parsed["confidence_score"] = 0
+            elif not isinstance(parsed["confidence_score"], int):
+                try:
+                    parsed["confidence_score"] = int(parsed["confidence_score"])
+                except:
+                    parsed["confidence_score"] = 0
+        else:
+            parsed["confidence_score"] = 0
+        
+        # Ensure other required fields exist
+        parsed.setdefault("agent_response", "No response generated")
+        parsed.setdefault("verdict", "NONE")
+        parsed.setdefault("evidence_summary", live_summary)
+        
+        return jsonify({
+            "response": parsed,
+            "search_evidence": live_summary,
+            "status": "success"
+        })
+    
+    except Exception as e:
+        print(f"Error in conversational_fact_check: {str(e)}")
+        return jsonify({
+            "response": {
+                "agent_response": f"An error occurred: {str(e)}",
+                "verdict": "UNKNOWN",
+                "confidence_score": 0,
+                "evidence_summary": ""
+            },
+            "status": "error"
+        }), 500
+
+# Fallback for old URL-based fact-checking
+@app.route('/conversational-fact-check-legacy', methods=['POST'])
+def conversational_fact_check_legacy():
     data = request.json
     user_message = data.get('message')
     conversation_history = data.get('conversation_history', [])
@@ -923,6 +1150,118 @@ If a URL is shared but you can't access the content (like X/Twitter posts that n
             'response': f"Sorry, I encountered an error: {str(e)}",
             'status': 'error'
         }), 500
+
+from PIL import Image
+import traceback
+
+@app.route('/api/analyze-image', methods=['POST'])
+def analyze_image():
+    print("📨 POST /api/analyze-image")
+    
+    try:
+        if 'image' not in request.files:
+            print("✗ No image in request")
+            return jsonify({'error': 'No image provided'}), 400
+        
+        file = request.files['image']
+        print(f"✓ File received: {file.filename}")
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Validate image
+        try:
+            print("  → Validating image...")
+            img = Image.open(file.stream)
+            img.verify()
+            file.stream.seek(0)
+            img = Image.open(file.stream)
+            print(f"  ✓ Image valid: {img.format} {img.size}")
+        except Exception as e:
+            print(f"  ✗ Image validation failed: {e}")
+            return jsonify({'error': f'Invalid image: {str(e)}'}), 400
+        
+        # Send to Gemini
+        try:
+            print("  → Sending to Gemini API...")
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            file.stream.seek(0)
+            response = model.generate_content([
+                "Analyze this image in short. Give confidence score telling if the image is AI generated or not.",
+                img
+            ])
+            analysis = response.text
+            print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
+            
+            return jsonify({
+                'success': True,
+                'analysis': analysis
+            }), 200
+        
+        except Exception as e:
+            print(f"  ✗ Gemini error: {e}")
+            traceback.print_exc()
+            return jsonify({'error': f'Gemini error: {str(e)}'}), 500
+    
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/analyze-video', methods=['POST'])
+def analyze_video():
+    # Supported video formats
+    SUPPORTED_FORMATS = {'video/mp4', 'video/mpeg', 'video/webm', 'video/x-msvideo', 'video/quicktime'}
+    MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB limit
+    
+    try:
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video provided'}), 400
+        
+        file = request.files['video']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > MAX_FILE_SIZE:
+            return jsonify({'error': f'File too large. Maximum size is 20MB, got {file_size / 1024 / 1024:.2f}MB'}), 400
+        
+        # Check MIME type
+        if file.content_type not in SUPPORTED_FORMATS:
+            return jsonify({'error': f'Unsupported video format. Supported: {", ".join(SUPPORTED_FORMATS)}'}), 400
+        
+        print(f"✓ File received: {file.filename} ({file_size / 1024 / 1024:.2f}MB)")
+        
+        # Read video bytes
+        video_bytes = file.read()
+        print("  → Sending to Gemini API...")
+        
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content([
+            "Analyze this video and determine if it's AI-generated or real. Respond with:\n1. A clear verdict (is it AI-generated or real?)\n2. Confidence score as a percentage\n3. Key indicators you observed\n\nUse plain text only, no markdown formatting.",
+            {
+                'mime_type': file.content_type,
+                'data': video_bytes
+            }
+        ])
+        
+        analysis = response.text
+        print(f"  ✓ Gemini response received ({len(analysis)} chars)\n")
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis
+        }), 200
+    
+    except Exception as e:
+        print(f"✗ Error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
     
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)

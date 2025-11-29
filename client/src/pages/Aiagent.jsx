@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-export default function AIAgent() {
+export default function Aiagent() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -67,10 +67,28 @@ export default function AIAgent() {
     }
   };
 
+  const getVerdictColor = (verdict) => {
+    if (verdict === 'TRUE') return 'bg-green-50 border-l-4 border-green-500';
+    if (verdict === 'FALSE') return 'bg-red-50 border-l-4 border-red-500';
+    return 'bg-gray-50 border-l-4 border-gray-500';
+  };
+
+  const getVerdictBadge = (verdict) => {
+    if (verdict === 'TRUE') return 'bg-green-100 text-green-800';
+    if (verdict === 'FALSE') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const getConfidenceColor = (confidence) => {
+    if (confidence >= 80) return 'text-green-700';
+    if (confidence >= 60) return 'text-yellow-700';
+    return 'text-red-700';
+  };
+
   return (
     <div className="w-full min-h-screen bg-gray-100 flex flex-col">
       <Navbar user={user} onLogout={handleLogout} />
-      <div className="max-w-4xl mx-auto w-full px-4 py-8">
+      <div className="max-w-5xl mx-auto w-full px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-6">AI Fact Checker Agent</h1>
 
@@ -107,50 +125,91 @@ export default function AIAgent() {
           )}
 
           {results && (
-            <div className="mt-6 border border-gray-200 rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Results</h2>
+            <div className="mt-8 space-y-6">
+              <h2 className="text-2xl font-bold text-gray-800">Fact-Check Results</h2>
 
-              {results.extracted_content && (
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">Extracted Content:</h3>
-                  <p className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg text-gray-700">
-                    {results.extracted_content}
-                  </p>
-                </div>
-              )}
-
-              {results.results && results.results.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-4">Fact-Check Analysis:</h3>
+              {results.results && results.results.length > 0 ? (
+                <div className="space-y-4">
                   {results.results.map((result, index) => (
-                    <div key={index} className="mb-6 border-l-4 border-indigo-500 pl-4">
-                      <h4 className="text-lg font-semibold text-gray-800 mb-2">Statement {index + 1}:</h4>
-                      <p className="mb-3"><strong className="text-gray-700">Text:</strong> <span className="text-gray-600">{result.text}</span></p>
-                      
-                      {result.search_results && (
-                        <div className="mb-3">
-                          <strong className="text-gray-700">Search Results:</strong>
-                          <p className="bg-gray-50 p-3 mt-2 rounded-lg text-sm text-gray-600">
-                            {result.search_results}
-                          </p>
+                    <div key={index} className={`p-6 rounded-lg ${getVerdictColor(result.verdict)}`}>
+                      {/* Claim */}
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-1"><strong>Claim:</strong></p>
+                        <p className="text-gray-800 text-base">{result.claim}</p>
+                      </div>
+
+                      {/* Verdict and Confidence */}
+                      <div className="flex gap-4 mb-4 flex-wrap">
+                        <div>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getVerdictBadge(result.verdict)}`}>
+                            {result.verdict}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`inline-block text-sm font-semibold ${getConfidenceColor(result.confidence)}`}>
+                            Confidence: {result.confidence}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Sources */}
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Sources:</p>
+                        <p className="text-sm text-gray-600 bg-white bg-opacity-50 px-3 py-2 rounded">
+                          {result.sources || 'None'}
+                        </p>
+                      </div>
+
+                      {/* Search Results Preview */}
+                      {result.search_results && result.search_results.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-sm font-semibold text-gray-700 mb-3">Supporting Evidence:</p>
+                          <div className="space-y-3">
+                            {result.search_results.map((sr) => (
+                              <div key={sr.id} className="bg-white bg-opacity-70 p-4 rounded border border-gray-200">
+                                <div className="flex items-start gap-3">
+                                  <span className="font-bold text-indigo-700 text-lg min-w-fit">[{sr.id}]</span>
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-gray-800 text-sm mb-2">{sr.title}</p>
+                                    <p className="text-gray-700 text-sm mb-2">{sr.snippet}</p>
+                                    {sr.link && (
+                                      <a 
+                                        href={sr.link} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:text-indigo-800 text-xs break-all"
+                                      >
+                                        🔗 {sr.link}
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
 
-                      {result.analysis && (
-                        <div>
-                          <strong className="text-gray-700">AI Analysis:</strong>
-                          <p className="bg-blue-50 p-3 mt-2 rounded-lg text-gray-700">
-                            {result.analysis}
-                          </p>
+                      {/* Full Analysis */}
+                      <details className="mt-4">
+                        <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                          View Full Analysis
+                        </summary>
+                        <div className="mt-3 text-sm text-gray-700 bg-white bg-opacity-50 p-3 rounded whitespace-pre-wrap">
+                          {result.analysis}
                         </div>
-                      )}
+                      </details>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="text-gray-500">
+                  <p>No results available</p>
                 </div>
               )}
 
               {results.error && (
-                <div className="text-red-600">
+                <div className="text-red-600 bg-red-50 p-4 rounded-lg">
                   <p>Error: {results.error}</p>
                 </div>
               )}

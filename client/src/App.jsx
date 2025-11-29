@@ -26,6 +26,9 @@
 // }
 
 // export default App
+
+import Imageupload from "./pages/Imageupload.jsx";
+import Video from "./pages/Video.jsx";
 import Conversation from "./pages/Conversation.jsx";
 import Trending from "./pages/Trending.jsx";
 import Login from './pages/Login.jsx'
@@ -148,6 +151,26 @@ const App = () => {
               element={
                 isSignedIn ? (
                   <Trending />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/analyze"
+              element={
+                isSignedIn ? (
+                  <Imageupload />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/video"
+              element={
+                isSignedIn ? (
+                  <Video />
                 ) : (
                   <Navigate to="/login" replace />
                 )
