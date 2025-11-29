@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Volume2, Copy, Check } from 'lucide-react';
+import { Send, Mic, Volume2, Copy, Check } from 'lucide-react';
 
 export default function FactChecker() {
   const [messages, setMessages] = useState([
@@ -100,7 +101,7 @@ export default function FactChecker() {
 
       if (typeof parsedResponse === 'string') {
         try {
-          const jsonMatch = parsedResponse.match(/```json\s*([\s\S]*?)\s*```/);
+          const jsonMatch = parsedResponse.match(/json\s*([\s\S]*?)\s*/);
           const jsonString = jsonMatch ? jsonMatch[1] : parsedResponse;
           parsedResponse = JSON.parse(jsonString);
         } catch (e) {

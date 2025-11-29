@@ -11,51 +11,30 @@ const PostsFeed = ({ targetLanguage = 'en', searchQuery = '' }) => {
 
   const fetchPosts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/getPosts");
+      const res = await fetch("http://localhost:5000/api/auth/getPosts", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ userEmail: email })
+      });
       const data = await res.json();
-
-      if (data.posts) {
-        // console.log("Fetched posts:", data.posts.map(p => ({ 
-        //   id: p.post_id, 
-        //   hasMedia: !!p.media, 
-        //   mediaType: p.mediaType 
-        // })));
-        // setPosts(data.posts.reverse()); // newest first
-      }
 
       if (data.posts) {
         setPosts(data.posts.reverse());
 
-        // Fetch who the current user is following for each post
+        // Build following status from the single API response
         const status = {};
         data.posts.forEach(p => {
-          status[p.email] = false; // default, will update via API
+          status[p.email] = data.following.includes(p.email);
         });
-
-        // optional: fetch all following at once from backend
-        fetch("http://localhost:5000/api/auth/getFollowingStatus", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-           },
-          body: JSON.stringify({ followerEmail: email })   // FIXED
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.following) {
-              data.following.forEach(followedEmail => {
-                status[followedEmail] = true;
-              });
-              setFollowingStatus(status);
-            }
-          })
-          .catch(err => console.error(err));
+        setFollowingStatus(status);
       }
 
     } catch (err) {
-  console.error("Error fetching posts:", err);
-}
+      console.error("Error fetching posts:", err);
+    }
   };
 
 useEffect(() => {
@@ -132,7 +111,7 @@ return (
     {filteredPosts.length === 0 ? (
       <div className="text-center py-12">
         <p className="text-gray-600 text-lg">
-          {searchQuery ? `No posts found matching "${searchQuery}"` : 'No posts available'}
+          {searchQuery ? `No posts found matching "${searchQuery}"` : 'Loading posts'}
         </p>
       </div>
     ) : (
